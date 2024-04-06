@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 
 class TodoItem {
-  final String title;
-  final String description;
+  String title;
+  String description;
 
   TodoItem({
     required this.title,
@@ -69,17 +69,17 @@ class _TodoState extends State<Todo> {
   }
 
   void _addItem(TodoItem item, bool isChecked) {
-    if (isChecked) {
-      setState(() {
+    setState(() {
+      if (isChecked) {
         _todoItems.add(item);
         _saveItems();
-      });
-    } else {
-      firebaseTodo.addTodo(
-        title: item.title,
-        description: item.description,
-      );
-    }
+      } else {
+        firebaseTodo.addTodo(
+          title: item.title,
+          description: item.description,
+        );
+      }
+    });
   }
 
   void _removeItem(int index) {
@@ -159,9 +159,10 @@ class _TodoState extends State<Todo> {
                 ElevatedButton(
                   onPressed: () {
                     bool storeLocal = _selectedSegment == 0; // Determine whether to store locally or in the cloud
+                    String title = _titleController.text.trim().isEmpty ? 'Untitled' : _titleController.text;
                     _addItem(
                       TodoItem(
-                        title: _titleController.text,
+                        title: title,
                         description: _descriptionController.text,
                       ),
                       storeLocal,
@@ -180,6 +181,53 @@ class _TodoState extends State<Todo> {
     );
   }
 
+  // Function to show the edit dialog
+  Future<void> _showEditDialog(BuildContext context, String docId, String title, String description) async {
+    TextEditingController _titleController = TextEditingController(text: title);
+    TextEditingController _descriptionController = TextEditingController(text: description);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Todo Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Title'),
+              ),
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                firebaseTodo.updateTodo(
+                  docId: docId,
+                  title: _titleController.text,
+                  description: _descriptionController.text,
+                );
+                Navigator.pop(context);
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,7 +239,11 @@ class _TodoState extends State<Todo> {
           children: [
             _buildSection(
               title: 'To-do List (Shared Preferences)',
-              content: TodoList(todoItems: _todoItems, removeItem: _removeItem),
+              content: TodoList(
+                todoItems: _todoItems,
+                removeItem: _removeItem,
+                editItem: _showEditDialog,
+              ),
               isExpanded: _isExpanded1,
               onTap: () {
                 setState(() {
@@ -312,7 +364,6 @@ class FirebaseTodo {
   }
 }
 
-
 class FirebaseTodoList extends StatelessWidget {
   final FirebaseTodo firebaseTodo;
 
@@ -323,7 +374,7 @@ class FirebaseTodoList extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: firebaseTodo.getTodos(),
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
           var todos = snapshot.data!.docs;
           return ListView.builder(
             shrinkWrap: true,
@@ -333,20 +384,76 @@ class FirebaseTodoList extends StatelessWidget {
               return ListTile(
                 title: Text(todo['title']),
                 subtitle: Text(todo['description']),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () {
-                    firebaseTodo.deleteTodo(docId: todo.id);
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit),
+                      onPressed: () => _showEditDialog(context, todo.id, todo['title'], todo['description']), // Call _showEditDialog function
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () {
+                        firebaseTodo.deleteTodo(docId: todo.id);
+                      },
+                    ),
+                  ],
                 ),
               );
             },
           );
         } else {
           return Center(
-            child: CircularProgressIndicator(),
+            child: Text('No todos available'),
           );
         }
+      },
+    );
+  }
+
+  // Function to show the edit dialog
+  Future<void> _showEditDialog(BuildContext context, String docId, String title, String description) async {
+    TextEditingController _titleController = TextEditingController(text: title);
+    TextEditingController _descriptionController = TextEditingController(text: description);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Todo Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Title'),
+              ),
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                firebaseTodo.updateTodo(
+                  docId: docId,
+                  title: _titleController.text,
+                  description: _descriptionController.text,
+                );
+                Navigator.pop(context);
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
       },
     );
   }
@@ -355,8 +462,9 @@ class FirebaseTodoList extends StatelessWidget {
 class TodoList extends StatelessWidget {
   final List<TodoItem> todoItems;
   final Function(int) removeItem;
+  final Function(BuildContext, String, String, String) editItem; // Add editItem function
 
-  TodoList({required this.todoItems, required this.removeItem});
+  TodoList({required this.todoItems, required this.removeItem, required this.editItem});
 
   @override
   Widget build(BuildContext context) {
@@ -368,11 +476,20 @@ class TodoList extends StatelessWidget {
         return ListTile(
           title: Text(item.title),
           subtitle: Text(item.description),
-          trailing: IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () {
-              removeItem(index);
-            },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit),
+                onPressed: () => editItem(context, 'id', item.title, item.description), // Call editItem function with context and todo item data
+              ),
+              IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () {
+                  removeItem(index);
+                },
+              ),
+            ],
           ),
         );
       },
