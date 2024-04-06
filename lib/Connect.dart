@@ -134,6 +134,13 @@ class _ConnectState extends State<Connect> {
     }
   }
 
+  void exitCollection() async {
+    setState(() {
+      globalConnectCode = null;
+    });
+    await _saveGlobalConnectCode('null');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,11 +252,7 @@ class _ConnectState extends State<Connect> {
                             },
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                globalConnectCode = null;
-                              });
-                            },
+                            onPressed: exitCollection,
                             child: Text('Exit'),
                           ),
                         ],
