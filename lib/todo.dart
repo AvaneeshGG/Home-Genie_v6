@@ -182,9 +182,11 @@ class _TodoState extends State<Todo> {
   }
 
   // Function to show the edit dialog
-  Future<void> _showEditDialog(BuildContext context, String docId, String title, String description) async {
-    TextEditingController _titleController = TextEditingController(text: title);
-    TextEditingController _descriptionController = TextEditingController(text: description);
+  Future<void> _showEditDialog(BuildContext context, int index) async {
+    TextEditingController _titleController =
+    TextEditingController(text: _todoItems[index].title);
+    TextEditingController _descriptionController =
+    TextEditingController(text: _todoItems[index].description);
 
     await showDialog(
       context: context,
@@ -213,11 +215,11 @@ class _TodoState extends State<Todo> {
             ),
             ElevatedButton(
               onPressed: () {
-                firebaseTodo.updateTodo(
-                  docId: docId,
-                  title: _titleController.text,
-                  description: _descriptionController.text,
-                );
+                setState(() {
+                  _todoItems[index].title = _titleController.text;
+                  _todoItems[index].description = _descriptionController.text;
+                  _saveItems();
+                });
                 Navigator.pop(context);
               },
               child: Text('Save'),
@@ -330,7 +332,8 @@ class _TodoState extends State<Todo> {
 }
 
 class FirebaseTodo {
-  final CollectionReference _todosCollection = FirebaseFirestore.instance.collection('sharedCollection').doc('405898').collection('todos');
+  final CollectionReference _todosCollection =
+  FirebaseFirestore.instance.collection('sharedCollection').doc('405898').collection('todos');
 
   Future<void> addTodo({
     required String title,
@@ -462,7 +465,7 @@ class FirebaseTodoList extends StatelessWidget {
 class TodoList extends StatelessWidget {
   final List<TodoItem> todoItems;
   final Function(int) removeItem;
-  final Function(BuildContext, String, String, String) editItem; // Add editItem function
+  final Function(BuildContext, int) editItem; // Add editItem function
 
   TodoList({required this.todoItems, required this.removeItem, required this.editItem});
 
@@ -481,7 +484,7 @@ class TodoList extends StatelessWidget {
             children: [
               IconButton(
                 icon: Icon(Icons.edit),
-                onPressed: () => editItem(context, 'id', item.title, item.description), // Call editItem function with context and todo item data
+                onPressed: () => editItem(context, index), // Call editItem function with context and index
               ),
               IconButton(
                 icon: Icon(Icons.delete),
