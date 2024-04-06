@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "450750580474",
+    "project_id": "home-genie-b80af",
+    "storage_bucket": "home-genie-b80af.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:450750580474:android:ffee163cb350fd43e52b43",
+        "android_client_info": {
+          "package_name": "com.example.homegenie.home_genie"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACZiLnodaTHfOz2gm-OrM6F8K8UwbF5XA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
