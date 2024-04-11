@@ -41,12 +41,15 @@ class _TodoState extends State<Todo> {
   bool _isLocal = true; // Variable to track the storage location
 
   List<TodoItem> _todoItems = [];
-  FirebaseTodo firebaseTodo = FirebaseTodo();
+  late FirebaseTodo firebaseTodo = FirebaseTodo(firebaseCode: firebaseCode);
+
+  late String? firebaseCode; // Global variable to store Firebase connection code
 
   @override
   void initState() {
     super.initState();
     _loadItems();
+    _getFirebaseCode(); // Fetch Firebase connection code
   }
 
   Future<void> _loadItems() async {
@@ -131,11 +134,13 @@ class _TodoState extends State<Todo> {
                     child: CupertinoSegmentedControl<int>(
                       children: {
                         0: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          padding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                           child: Text('Local'),
                         ),
                         1: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          padding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                           child: Text('Cloud'),
                         ),
                       },
@@ -159,7 +164,8 @@ class _TodoState extends State<Todo> {
                 ElevatedButton(
                   onPressed: () {
                     bool storeLocal = _selectedSegment == 0; // Determine whether to store locally or in the cloud
-                    String title = _titleController.text.trim().isEmpty ? 'Untitled' : _titleController.text;
+                    String title =
+                    _titleController.text.trim().isEmpty ? 'Untitled' : _titleController.text;
                     _addItem(
                       TodoItem(
                         title: title,
@@ -230,6 +236,15 @@ class _TodoState extends State<Todo> {
     );
   }
 
+  // Function to retrieve and display the Firebase connection code
+  Future<void> _getFirebaseCode() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? code = prefs.getString('globalConnectCode');
+    setState(() {
+      firebaseCode = code;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -263,6 +278,14 @@ class _TodoState extends State<Todo> {
                 });
               },
             ),
+            if (firebaseCode != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Family Connect Code: $firebaseCode',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
           ],
         ),
       ),
@@ -272,17 +295,6 @@ class _TodoState extends State<Todo> {
         },
         label: Text('Add'),
         icon: Icon(Icons.add),
-        // Checkbox to indicate storage location
-        // If checked, store locally; otherwise, store in Firebase
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        backgroundColor: Colors.blue,
-        elevation: 2.0,
-        tooltip: 'Add a new item',
-        isExtended: true,
-        splashColor: Colors.blueAccent,
-        // Removed secondary property
       ),
     );
   }
@@ -332,8 +344,15 @@ class _TodoState extends State<Todo> {
 }
 
 class FirebaseTodo {
-  final CollectionReference _todosCollection =
-  FirebaseFirestore.instance.collection('sharedCollection').doc('405898').collection('todos');
+
+  late CollectionReference _todosCollection;
+
+  FirebaseTodo({required String? firebaseCode}) {
+    _todosCollection = FirebaseFirestore.instance
+        .collection('sharedCollection')
+        .doc(firebaseCode)
+        .collection('todos');
+  }
 
   Future<void> addTodo({
     required String title,
@@ -392,7 +411,11 @@ class FirebaseTodoList extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: Icon(Icons.edit),
-                      onPressed: () => _showEditDialog(context, todo.id, todo['title'], todo['description']), // Call _showEditDialog function
+                      onPressed: () => _showEditDialog(
+                          context,
+                          todo.id,
+                          todo['title'],
+                          todo['description']), // Call _showEditDialog function
                     ),
                     IconButton(
                       icon: Icon(Icons.delete),
@@ -415,7 +438,8 @@ class FirebaseTodoList extends StatelessWidget {
   }
 
   // Function to show the edit dialog
-  Future<void> _showEditDialog(BuildContext context, String docId, String title, String description) async {
+  Future<void> _showEditDialog(
+      BuildContext context, String docId, String title, String description) async {
     TextEditingController _titleController = TextEditingController(text: title);
     TextEditingController _descriptionController = TextEditingController(text: description);
 

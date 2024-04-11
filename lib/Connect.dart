@@ -38,6 +38,9 @@ class _ConnectState extends State<Connect> {
   Future<void> _saveGlobalConnectCode(String connectCode) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('globalConnectCode', connectCode);
+    setState(() {
+      globalConnectCode = connectCode;
+    });
   }
 
   Future<void> _getGlobalConnectCode() async {
@@ -211,55 +214,57 @@ class _ConnectState extends State<Connect> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('sharedCollection')
-                      .doc(globalConnectCode)
-                      .get(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return Center(
-                          child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(
-                          child: Text('Error: ${snapshot.error}'));
-                    } else {
-                      final Map<String, dynamic>? data =
-                      snapshot.data!.data() as Map<String, dynamic>?;
+                if (globalConnectCode != null) ...[
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('sharedCollection')
+                        .doc(globalConnectCode)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(
+                            child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(
+                            child: Text('Error: ${snapshot.error}'));
+                      } else {
+                        final Map<String, dynamic>? data =
+                        snapshot.data!.data() as Map<String, dynamic>?;
 
-                      if (data == null) {
-                        return Center(child: Text('No data available'));
+                        if (data == null) {
+                          return Center(child: Text('No data available'));
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Members in current Family:'),
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: data.length,
+                              itemBuilder: (context, index) {
+                                final fieldName =
+                                data.keys.elementAt(index);
+                                final fieldValue =
+                                data.values.elementAt(index);
+                                return ListTile(
+                                  title:
+                                  Text('$fieldName: $fieldValue'),
+                                );
+                              },
+                            ),
+                            ElevatedButton(
+                              onPressed: exitCollection,
+                              child: Text('Exit'),
+                            ),
+                          ],
+                        );
                       }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Members in current Family:'),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: data.length,
-                            itemBuilder: (context, index) {
-                              final fieldName =
-                              data.keys.elementAt(index);
-                              final fieldValue =
-                              data.values.elementAt(index);
-                              return ListTile(
-                                title:
-                                Text('$fieldName: $fieldValue'),
-                              );
-                            },
-                          ),
-                          ElevatedButton(
-                            onPressed: exitCollection,
-                            child: Text('Exit'),
-                          ),
-                        ],
-                      );
-                    }
-                  },
-                ),
+                    },
+                  ),
+                ],
               ],
             ),
           ),
