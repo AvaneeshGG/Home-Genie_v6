@@ -117,27 +117,27 @@ class _InventoryState extends State<Inventory> {
           children: [
             _buildExpandableSection(
               title: 'Fruits',
-              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Fruits')),
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'fruits')),
               index: 0,
             ),
             _buildExpandableSection(
               title: 'Vegetables',
-              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Vegetables')),
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'vegetables')),
               index: 1,
             ),
             _buildExpandableSection(
               title: 'Daily Essentials',
-              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Daily Essentials')),
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'daily essentials')),
               index: 2,
             ),
             _buildExpandableSection(
               title: 'Medicines',
-              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Medicines')),
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'medicines')),
               index: 3,
             ),
             _buildExpandableSection(
               title: 'Pulses',
-              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Pulses')),
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'pulses')),
               index: 4,
             ),
           ],

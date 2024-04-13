@@ -13,7 +13,7 @@ Future<String?> _getFirebaseCode() async {
 
 void fetchData(String response) async {
   //String response =
-   //   '{"items": [{"item": "kiwi", "category": "fruits", "metric_weight": "200 gms"}, {"item": "combiflam", "category": "pulses"}], "labels": ["add", "pantry"]}';
+  //   '{"items": [{"item": "kiwi", "category": "fruits", "metric_weight": "200 gms"}, {"item": "combiflam", "category": "pulses"}], "labels": ["add", "pantry"]}';
 
   if (response != null) {
     Map<String, dynamic> jsonResponse = jsonDecode(response);
@@ -80,6 +80,5 @@ Future<void> addFruit({
     print('Error adding fruit: $e');
   }
 }
-
 
 
