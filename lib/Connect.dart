@@ -78,13 +78,17 @@ class _ConnectState extends State<Connect> {
     final sharedCollectionSnapshot = await sharedCollectionRef.get();
     if (!sharedCollectionSnapshot.exists) {
       // Create a new subcollection with the access code as the collection ID
-      await sharedCollectionRef.set({
-        'createdBy': user!.email,
-      }, SetOptions(merge: true));
       await sharedCollectionRef
           .set({'accessCode': code}, SetOptions(merge: true));
+
+      // Add the user's email to the members collection
+      final membersRef = sharedCollectionRef.collection('members');
+      await membersRef.add({
+        'email': user!.email,
+      });
     }
   }
+
 
   void grantAccessToCollection(String connectCode, BuildContext context) async {
     try {
