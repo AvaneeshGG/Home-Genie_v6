@@ -1,66 +1,85 @@
-import 'dart:async';
 import 'dart:convert';
-import './main.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:core';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'main.dart';
 
-class Manager {
-  Future<void> printCats(String jsonData) async {
-    var data = jsonDecode(jsonData);
+Future<String?> _getFirebaseCode() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('globalConnectCode');
+}
 
-    var entities = data['entities'];
+void fetchData(String response) async {
+  //String response =
+   //   '{"items": [{"item": "kiwi", "category": "fruits", "metric_weight": "200 gms"}, {"item": "combiflam", "category": "pulses"}], "labels": ["add", "pantry"]}';
 
-    // Loop through entities
-    for (var entity in entities) {
-      // Check if entity contains "fruits" key
-      if (entity.containsKey('fruits')) {
-        // Print only the value associated with "fruits" key
-        print(entity['fruits']);
-      }
-    }
+  if (response != null) {
+    Map<String, dynamic> jsonResponse = jsonDecode(response);
+    print(jsonResponse);
 
-    // Extracting categories
-    var categories = data['cats'];
+    var items = jsonResponse['items'];
+    var labels = jsonResponse['labels'];
 
-    // Printing extracted data
-    print('Categories: $categories');
+    if (labels.contains('add')) {
+      // Retrieve the global connect code
+      String? firebaseCode = await _getFirebaseCode();
+      if (firebaseCode != null) {
+        for (var item in items) {
+          var itemName = item['item'] ?? null;
+          var category = item['category'] ?? null;
+          var quantity = item['quantity'] ?? null;
+          var metricWeight = item['metric_weight'] ?? null;
+          print(itemName);
+          print(category);
+          print(quantity);
+          print(metricWeight);
 
-    // Extracting and parsing category values with null checks
-    double add = categories['add'] != null ? double.parse(categories['add'].toString()) : 0.0;
-    double chores = categories['chores'] != null ? double.parse(categories['chores'].toString()) : 0.0;
-    double fetch = categories['fetch'] != null ? double.parse(categories['fetch'].toString()) : 0.0;
-    double fruits = categories['fruits'] != null ? double.parse(categories['fruits'].toString()) : 0.0;
-    double item = categories['item'] != null ? double.parse(categories['item'].toString()) : 0.0;
-    double location = categories['location'] != null ? double.parse(categories['location'].toString()) : 0.0;
-    double medicine = categories['medicine'] != null ? double.parse(categories['medicine'].toString()) : 0.0;
-    double metric_weight = categories['metric_weight'] != null ? double.parse(categories['metric_weight'].toString()) : 0.0;
-    double pantry = categories['pantry'] != null ? double.parse(categories['pantry'].toString()) : 0.0;
-    double pulses = categories['pulses'] != null ? double.parse(categories['pulses'].toString()) : 0.0;
-    double quantity = categories['quantity'] != null ? double.parse(categories['quantity'].toString()) : 0.0;
-    double remove = categories['remove'] != null ? double.parse(categories['remove'].toString()) : 0.0;
-    double strength = categories['strength'] != null ? double.parse(categories['strength'].toString()) : 0.0;
-    double task = categories['task'] != null ? double.parse(categories['task'].toString()) : 0.0;
-    double timeBound = categories['time-bound'] != null ? double.parse(categories['time-bound'].toString()) : 0.0;
-    double toDo = categories['to-do'] != null ? double.parse(categories['to-do'].toString()) : 0.0;
-    double vegetable = categories['vegetable'] != null ? double.parse(categories['vegetable'].toString()) : 0.0;
-
-    print(add);
-    print(fetch);
-
-    if (add >= 0.7 && pantry >= 0.7) {}
-    Future<String> CatOut() async {
-      var entities = data['entities'];
-      String fruit = ''; // Initialize fruit to an empty string
-
-      // Loop through entities
-      for (var entity in entities) {
-        // Check if entity contains "fruits" key
-        if (entity.containsKey('fruits')) {
-          // Print only the value associated with "fruits" key
-          fruit = entity['fruits'];
-          break; // Exit the loop once the fruit is found
+          // Example: Adding data to Firestore
+          await addFruit(
+            firebaseCode: firebaseCode,
+            itemName: itemName,
+            category: category,
+            quantity: quantity,
+            metricWeight: metricWeight,
+          );
         }
+      } else {
+        print('Global connect code not found in SharedPreferences.');
       }
-
-      return fruit; // Return the found fruit, or an empty string if none found
+    } else {
+      print('Label "add" not found in the JSON response.');
     }
+  } else {
+    throw Exception('Failed to load data');
   }
 }
+
+// Function to add a fruit to Firestore
+Future<void> addFruit({
+  required String firebaseCode,
+  required String? itemName,
+  required String category,
+  String? quantity,
+  String? metricWeight,
+}) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('sharedCollection')
+        .doc(firebaseCode)
+        .collection(category)
+        .doc(itemName) // Use item name as document ID
+        .set({
+      'item': itemName,
+      'quantity': quantity,
+      'metric_weight': metricWeight,
+    });
+    print('Fruit added successfully.');
+  } catch (e) {
+    print('Error adding fruit: $e');
+  }
+}
+
+
+

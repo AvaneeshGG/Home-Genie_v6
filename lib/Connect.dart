@@ -167,9 +167,7 @@ class _ConnectState extends State<Connect> {
                       const SizedBox(height: 20),
                     ],
                     ElevatedButton(
-                      onPressed: globalConnectCode != null
-                          ? null
-                          : (accessCode != null ? null : _generateAccessCode),
+                      onPressed: globalConnectCode == 'null' ? _generateAccessCode : null,
                       child: Text('Generate Access Code'),
                     ),
                   ],

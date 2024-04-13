@@ -15,12 +15,15 @@ import './manager.dart';
 import './pantry.dart';
 import './todo.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(HomeGenie());
+
+
 }
 
 class HomeGenie extends StatelessWidget {
@@ -45,7 +48,6 @@ class HG_App extends StatefulWidget {
 }
 
 class HG_AppState extends State<HG_App> {
-  Manager manager = Manager();
   late SpeechToText _speechToText;
   bool _speechEnabled = false;
   String _lastWords = '';
@@ -105,6 +107,7 @@ class HG_AppState extends State<HG_App> {
       print('Response body: ${response.body}');
       setState(() {
         _httpResponse = response.body;
+        fetchData(_httpResponse);
       });
     } else {
       print('Request failed with status: ${response.statusCode}');
