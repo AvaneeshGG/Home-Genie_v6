@@ -86,7 +86,7 @@ class _ConnectState extends State<Connect> {
     }
   }
 
-  void grantAccessToCollection(String connectCode) async {
+  void grantAccessToCollection(String connectCode, BuildContext context) async {
     try {
       // Check if the sharedCollection with the provided access code exists
       final sharedCollectionRef = FirebaseFirestore.instance
@@ -95,24 +95,24 @@ class _ConnectState extends State<Connect> {
       final sharedCollectionSnapshot = await sharedCollectionRef.get();
 
       if (sharedCollectionSnapshot.exists) {
-        // Collection with the same access code exists, display its name
-        final collectionName =
-            sharedCollectionSnapshot.reference.parent?.id;
+        // Check if the current user's email exists in the members subcollection
+        final currentUserEmail = FirebaseAuth.instance.currentUser!.email;
+        final membersRef = sharedCollectionRef.collection('members');
+        final currentUserRef =
+        membersRef.where('email', isEqualTo: currentUserEmail);
+        final currentUserSnapshot = await currentUserRef.get();
 
-        // Fetch existing members to determine the next member number
-        final memberQuerySnapshot =
-        await sharedCollectionRef.collection(connectCode).get();
-        final nextMemberNumber = memberQuerySnapshot.docs.length + 1;
-
-        // Add the current user's email to the 'Member' subcollection
-        await sharedCollectionRef.set({
-          'member$nextMemberNumber': user!.email,
-        }, SetOptions(merge: true));
+        if (currentUserSnapshot.docs.isEmpty) {
+          // Add the current user's email to the connectCode collection
+          await membersRef.add({
+            'email': currentUserEmail,
+            // Removed the timestamp
+          });
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-            Text('Connected to collection: $collectionName'),
+            content: Text('Connected to collection with email: $currentUserEmail'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -120,14 +120,14 @@ class _ConnectState extends State<Connect> {
         // Collection with the access code does not exist
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'No collection found with the provided access code!'),
+            content: Text('No collection found with the provided access code!'),
             duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (error) {
       // Handle any errors that occur during the process
+      print('Error occurred: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('An error occurred: $error'),
@@ -190,18 +190,16 @@ class _ConnectState extends State<Connect> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () async {
-                        if (connectCode != null &&
-                            connectCode!.isNotEmpty) {
+                        if (connectCode != null && connectCode!.isNotEmpty) {
                           setState(() {
                             globalConnectCode = connectCode;
                           });
                           await _saveGlobalConnectCode(connectCode!);
-                          grantAccessToCollection(connectCode!);
+                          grantAccessToCollection(connectCode!, context);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                  'Please enter a valid connect code!'),
+                              content: Text('Please enter a valid connect code!'),
                               duration: Duration(seconds: 2),
                             ),
                           );
@@ -219,13 +217,14 @@ class _ConnectState extends State<Connect> {
                         .doc(globalConnectCode)
                         .get(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(
-                            child: CircularProgressIndicator());
+                          child: CircularProgressIndicator(),
+                        );
                       } else if (snapshot.hasError) {
                         return Center(
-                            child: Text('Error: ${snapshot.error}'));
+                          child: Text('Error: ${snapshot.error}'),
+                        );
                       } else {
                         final Map<String, dynamic>? data =
                         snapshot.data!.data() as Map<String, dynamic>?;
@@ -238,19 +237,36 @@ class _ConnectState extends State<Connect> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Members in current Family:'),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: data.length,
-                              itemBuilder: (context, index) {
-                                final fieldName =
-                                data.keys.elementAt(index);
-                                final fieldValue =
-                                data.values.elementAt(index);
-                                return ListTile(
-                                  title:
-                                  Text('$fieldName: $fieldValue'),
-                                );
+                            FutureBuilder<QuerySnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection('sharedCollection')
+                                  .doc(globalConnectCode)
+                                  .collection('members')
+                                  .get(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                }
+                                if (snapshot.hasError) {
+                                  return Text('Error: ${snapshot.error}');
+                                }
+                                if (snapshot.hasData) {
+                                  final members = snapshot.data!.docs;
+                                  return ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    itemCount: members.length,
+                                    itemBuilder: (context, index) {
+                                      final fieldValue = members[index].get('email');
+                                      return ListTile(
+                                        leading: Icon(Icons.circle),
+                                        title: Text('$fieldValue'),
+                                      );
+                                    },
+                                  );
+                                }
+                                return Text('No members found.');
                               },
                             ),
                             ElevatedButton(
