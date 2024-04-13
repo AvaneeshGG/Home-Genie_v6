@@ -138,6 +138,23 @@ class _ConnectState extends State<Connect> {
   }
 
   void exitCollection() async {
+    if (globalConnectCode != null) {
+      // Remove the user's email from the members collection
+      final currentUserEmail = FirebaseAuth.instance.currentUser!.email;
+      final membersRef = FirebaseFirestore.instance
+          .collection('sharedCollection')
+          .doc(globalConnectCode)
+          .collection('members');
+      final querySnapshot = await membersRef
+          .where('email', isEqualTo: currentUserEmail)
+          .get();
+
+      querySnapshot.docs.forEach((doc) {
+        doc.reference.delete();
+      });
+    }
+
+    // Reset globalConnectCode and save it to 'null'
     setState(() {
       globalConnectCode = null;
     });
