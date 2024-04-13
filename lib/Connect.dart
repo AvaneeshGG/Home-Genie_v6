@@ -89,7 +89,6 @@ class _ConnectState extends State<Connect> {
     }
   }
 
-
   void grantAccessToCollection(String connectCode, BuildContext context) async {
     try {
       // Check if the sharedCollection with the provided access code exists
@@ -169,141 +168,148 @@ class _ConnectState extends State<Connect> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Access code')),
-      body: ListView(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text('User Email: ${user!.email}'),
-                const SizedBox(height: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (accessCode != null) ...[
-                      Text('Your Access Code: $accessCode'),
-                      const SizedBox(height: 20),
-                    ],
-                    ElevatedButton(
-                      onPressed: globalConnectCode == 'null' ? _generateAccessCode : null,
-                      child: Text('Generate Access Code'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          connectCode = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        labelText: 'Enter Connect Code',
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Refresh logic goes here, for example, fetching updated data from Firestore
+          // For simplicity, you can just reload the page
+          setState(() {});
+        },
+        child: ListView(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text('User Email: ${user!.email}'),
+                  const SizedBox(height: 20),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (accessCode != null) ...[
+                        Text('Your Access Code: $accessCode'),
+                        const SizedBox(height: 20),
+                      ],
+                      ElevatedButton(
+                        onPressed: globalConnectCode == 'null' ? _generateAccessCode : null,
+                        child: Text('Generate Access Code'),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (connectCode != null && connectCode!.isNotEmpty) {
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextField(
+                        onChanged: (value) {
                           setState(() {
-                            globalConnectCode = connectCode;
+                            connectCode = value;
                           });
-                          await _saveGlobalConnectCode(connectCode!);
-                          grantAccessToCollection(connectCode!, context);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Enter Connect Code',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (connectCode != null && connectCode!.isNotEmpty) {
+                            setState(() {
+                              globalConnectCode = connectCode;
+                            });
+                            await _saveGlobalConnectCode(connectCode!);
+                            grantAccessToCollection(connectCode!, context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Please enter a valid connect code!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text('Connect to User'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (globalConnectCode != null) ...[
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('sharedCollection')
+                          .doc(globalConnectCode)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else if (snapshot.hasError) {
+                          return Center(
+                            child: Text('Error: ${snapshot.error}'),
+                          );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Please enter a valid connect code!'),
-                              duration: Duration(seconds: 2),
-                            ),
+                          final Map<String, dynamic>? data =
+                          snapshot.data!.data() as Map<String, dynamic>?;
+
+                          if (data == null) {
+                            return Center(child: Text('No data available'));
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Members in current Family:'),
+                              FutureBuilder<QuerySnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('sharedCollection')
+                                    .doc(globalConnectCode)
+                                    .collection('members')
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return CircularProgressIndicator();
+                                  }
+                                  if (snapshot.hasError) {
+                                    return Text('Error: ${snapshot.error}');
+                                  }
+                                  if (snapshot.hasData) {
+                                    final members = snapshot.data!.docs;
+                                    return ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      itemCount: members.length,
+                                      itemBuilder: (context, index) {
+                                        final fieldValue = members[index].get('email');
+                                        return ListTile(
+                                          leading: Icon(Icons.circle),
+                                          title: Text('$fieldValue'),
+                                        );
+                                      },
+                                    );
+                                  }
+                                  return Text('No members found.');
+                                },
+                              ),
+                              ElevatedButton(
+                                onPressed: exitCollection,
+                                child: Text('Exit'),
+                              ),
+                            ],
                           );
                         }
                       },
-                      child: Text('Connect to User'),
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                if (globalConnectCode != null) ...[
-                  FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('sharedCollection')
-                        .doc(globalConnectCode)
-                        .get(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      } else if (snapshot.hasError) {
-                        return Center(
-                          child: Text('Error: ${snapshot.error}'),
-                        );
-                      } else {
-                        final Map<String, dynamic>? data =
-                        snapshot.data!.data() as Map<String, dynamic>?;
-
-                        if (data == null) {
-                          return Center(child: Text('No data available'));
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Members in current Family:'),
-                            FutureBuilder<QuerySnapshot>(
-                              future: FirebaseFirestore.instance
-                                  .collection('sharedCollection')
-                                  .doc(globalConnectCode)
-                                  .collection('members')
-                                  .get(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                }
-                                if (snapshot.hasError) {
-                                  return Text('Error: ${snapshot.error}');
-                                }
-                                if (snapshot.hasData) {
-                                  final members = snapshot.data!.docs;
-                                  return ListView.builder(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount: members.length,
-                                    itemBuilder: (context, index) {
-                                      final fieldValue = members[index].get('email');
-                                      return ListTile(
-                                        leading: Icon(Icons.circle),
-                                        title: Text('$fieldValue'),
-                                      );
-                                    },
-                                  );
-                                }
-                                return Text('No members found.');
-                              },
-                            ),
-                            ElevatedButton(
-                              onPressed: exitCollection,
-                              child: Text('Exit'),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
