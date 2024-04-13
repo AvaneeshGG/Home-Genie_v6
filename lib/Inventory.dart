@@ -1,7 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-late String? selectedCategory = null;
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Inventory App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: Inventory(),
+    );
+  }
+}
+
+class FirebaseTodo {
+  final String? category;
+  late CollectionReference _todosCollection;
+
+  FirebaseTodo({required this.category}) {
+    if (category != null) {
+      _todosCollection = FirebaseFirestore.instance
+          .collection('sharedCollection')
+          .doc('405898')
+          .collection(category!);
+    }
+  }
+
+  Future<void> addTodo({
+    required String title,
+    required String quantity,
+    required String weight,
+  }) async {
+    await _todosCollection.doc(title).set({
+      'quantity': quantity,
+      'weight': weight,
+      'category': category,
+    });
+  }
+
+  Future<void> updateTodo({
+    required String docId,
+    required String title,
+    required String quantity,
+    required String weight,
+  }) async {
+    await _todosCollection.doc(docId).update({
+      'title': title,
+      'quantity': quantity,
+      'weight': weight,
+    });
+  }
+
+  Future<void> deleteTodo({
+    required String docId,
+  }) async {
+    await _todosCollection.doc(docId).delete();
+  }
+
+  Stream<QuerySnapshot> getTodos() {
+    return _todosCollection.snapshots();
+  }
+}
 
 class Inventory extends StatefulWidget {
   const Inventory({Key? key}) : super(key: key);
@@ -11,20 +79,123 @@ class Inventory extends StatefulWidget {
 }
 
 class _InventoryState extends State<Inventory> {
-  bool _isExpanded2 = false;
   late TextEditingController _titleController;
   late TextEditingController _quantityController;
   late TextEditingController _weightController;
   late FirebaseTodo firebaseTodo;
+  String? selectedCategory;
+  List<bool> _isOpenList = [false, false, false, false, false]; // Keeps track of expansion state
+  List<int> _expandedIndices = [-1]; // Track currently expanded panel index
 
   @override
   void initState() {
     super.initState();
-    selectedCategory = 'Fruits'; // Initialize with a default category
+    selectedCategory = 'Fruits';
     firebaseTodo = FirebaseTodo(category: selectedCategory);
     _titleController = TextEditingController();
     _quantityController = TextEditingController();
     _weightController = TextEditingController();
+  }
+
+  void _addItem() {
+    String title = _titleController.text;
+    firebaseTodo.addTodo(
+      title: title,
+      quantity: _quantityController.text,
+      weight: _weightController.text,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Inventory'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildExpandableSection(
+              title: 'Fruits',
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Fruits')),
+              index: 0,
+            ),
+            _buildExpandableSection(
+              title: 'Vegetables',
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Vegetables')),
+              index: 1,
+            ),
+            _buildExpandableSection(
+              title: 'Daily Essentials',
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Daily Essentials')),
+              index: 2,
+            ),
+            _buildExpandableSection(
+              title: 'Medicines',
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Medicines')),
+              index: 3,
+            ),
+            _buildExpandableSection(
+              title: 'Pulses',
+              content: FirebaseTodoList(firebaseTodo: FirebaseTodo(category: 'Pulses')),
+              index: 4,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          _showAddDialog(context);
+        },
+        label: Text('Add'),
+        icon: Icon(Icons.add),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        backgroundColor: Colors.blue,
+        elevation: 2.0,
+        tooltip: 'Add a new item',
+        isExtended: true,
+        splashColor: Colors.blueAccent,
+      ),
+    );
+  }
+
+  Widget _buildExpandableSection({
+    required String title,
+    required Widget content,
+    required int index,
+  }) {
+    return ExpansionPanelList.radio(
+      elevation: 2,
+      expandedHeaderPadding: EdgeInsets.all(10),
+      children: [
+        ExpansionPanelRadio(
+          value: index,
+          headerBuilder: (context, isExpanded) {
+            return Container(
+              color: Colors.blue, // Set the background color here
+              child: ListTile(
+                title: Text(
+                  title,
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            );
+          },
+          body: content,
+          canTapOnHeader: true,
+        ),
+      ],
+      expansionCallback: (int item, bool isExpanded) {
+        setState(() {
+          _expandedIndices.clear(); // Clear previous expansion
+          if (!isExpanded) {
+            _expandedIndices.add(item);
+          }
+        });
+      },
+    );
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
@@ -54,7 +225,7 @@ class _InventoryState extends State<Inventory> {
                 onChanged: (String? value) {
                   _chosenValue = value;
                   setState(() {
-                    selectedCategory = value ?? 'Fruits'; // Handle null value
+                    selectedCategory = value ?? 'Fruits';
                     firebaseTodo = FirebaseTodo(category: selectedCategory);
                   });
                 },
@@ -82,146 +253,6 @@ class _InventoryState extends State<Inventory> {
         );
       },
     );
-  }
-
-  void _addItem() {
-    String title = _titleController.text; // Get the title from the text field
-    firebaseTodo.addTodo(
-      title: title,
-      quantity: _quantityController.text,
-      weight: _weightController.text,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Inventory'),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildSection(
-              title: 'Fruits',
-              content: FirebaseTodoList(firebaseTodo: firebaseTodo),
-              isExpanded: _isExpanded2,
-              onTap: () {
-                setState(() {
-                  _isExpanded2 = !_isExpanded2;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showAddDialog(context);
-        },
-        label: Text('Add'),
-        icon: Icon(Icons.add),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        backgroundColor: Colors.blue,
-        elevation: 2.0,
-        tooltip: 'Add a new item',
-        isExtended: true,
-        splashColor: Colors.blueAccent,
-      ),
-    );
-  }
-
-  Widget _buildSection({
-    required String title,
-    required Widget content,
-    required bool isExpanded,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            color: Colors.blue,
-            padding: EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: Colors.white,
-                ),
-              ],
-            ),
-          ),
-        ),
-        Visibility(
-          visible: isExpanded,
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 300),
-            padding: EdgeInsets.all(16),
-            color: Colors.grey[200],
-            child: content,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class FirebaseTodo {
-  final String? category;
-  late CollectionReference _todosCollection;
-
-  FirebaseTodo({required this.category}) {
-    if (category != null) {
-      _todosCollection = FirebaseFirestore.instance
-          .collection('sharedCollection')
-          .doc('405898')
-          .collection(category!); // Use the null assertion operator (!) to access the non-nullable string
-    }
-  }
-
-  Future<void> addTodo({
-    required String title,
-    required String quantity,
-    required String weight,
-  }) async {
-    await _todosCollection.doc(title).set({ // Use title as the document ID
-      'quantity': quantity,
-      'weight': weight,
-    });
-  }
-
-  Future<void> updateTodo({
-    required String docId,
-    required String title,
-    required String quantity,
-    required String weight,
-  }) async {
-    await _todosCollection.doc(docId).update({
-      'title': title,
-      'quantity': quantity,
-      'weight': weight,
-    });
-  }
-
-  Future<void> deleteTodo({
-    required String docId,
-  }) async {
-    await _todosCollection.doc(docId).delete();
-  }
-
-  Stream<QuerySnapshot> getTodos() {
-    return _todosCollection.snapshots();
   }
 }
 
@@ -290,29 +321,26 @@ class _DropDownDemoState extends State<DropDownDemo> {
   @override
   Widget build(BuildContext context) {
     return DropdownButton<String>(
-      value: _chosenValue,
-      //elevation: 5,
-      style: TextStyle(color: Colors.black),
-      items: <String?>[
-        null, // Add a null value to represent the hint
-        'Fruits',
-        'Vegetables',
-        'Daily Essentials',
-        'Medicines',
-        'Pulses',
-      ].map<DropdownMenuItem<String>>((String? value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value ?? 'Select Category'), // Use value ?? 'Select Category' to display the hint text
+        value: _chosenValue,
+        items: <String?>[
+          null,
+          'Fruits',
+          'Vegetables',
+          'Daily Essentials',
+          'Medicines',
+          'Pulses',
+        ].map<DropdownMenuItem<String>>((String? value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value ?? 'Select Category'),
+          );
+        }).toList(),
+        onChanged: (String? value) {
+          setState(() {
+            _chosenValue = value;
+            widget.onChanged(value);
+          });
+          },
         );
-      }).toList(),
-      onChanged: (String? value) {
-        setState(() {
-          _chosenValue = value;
-          selectedCategory=_chosenValue;
-          widget.onChanged(value);
-        });
-      },
-    );
-  }
+    }
 }
