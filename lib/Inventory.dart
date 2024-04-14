@@ -18,7 +18,7 @@ class FirebaseTodo {
     required String quantity,
     required String weight,
   }) async {
-    await _todosCollection.doc(title).set({
+    await _todosCollection.add({
       'title': title,
       'quantity': quantity,
       'weight': weight,
@@ -31,6 +31,9 @@ class FirebaseTodo {
     required String quantity,
     required String weight,
   }) async {
+    // Ensure that docId is not empty or null
+    assert(docId.isNotEmpty);
+
     await _todosCollection.doc(docId).update({
       'title': title,
       'quantity': quantity,
@@ -51,7 +54,7 @@ class FirebaseTodo {
 
 class FirebaseTodoList extends StatelessWidget {
   final FirebaseTodo firebaseTodo;
-  final Function(BuildContext, String, String, String) showEditDialog;
+  final Function(BuildContext, String, String, String, String) showEditDialog;
 
   FirebaseTodoList({
     required this.firebaseTodo,
@@ -71,11 +74,9 @@ class FirebaseTodoList extends StatelessWidget {
             itemBuilder: (context, index) {
               var inventory = todos[index];
               String documentName = inventory.id;
-              Map<String, dynamic> data =
-              inventory.data() as Map<String, dynamic>;
-              String weight = data['weight'] != null
-                  ? data['weight'].toString()
-                  : 'N/A';
+              Map<String, dynamic> data = inventory.data() as Map<String, dynamic>;
+              String title = data['title'] != null ? data['title'].toString() : 'Untitled'; // Get the title from data
+              String weight = data['weight'] != null ? data['weight'].toString() : 'N/A';
               return Slidable(
                 actionPane: SlidableDrawerActionPane(),
                 actions: [
@@ -84,7 +85,7 @@ class FirebaseTodoList extends StatelessWidget {
                     color: Colors.green,
                     icon: Icons.edit,
                     onTap: () {
-                      showEditDialog(context, documentName, data['quantity'], data['weight']);
+                      showEditDialog(context, documentName, data['quantity'], data['weight'], title);
                     },
                   ),
                 ],
@@ -99,7 +100,7 @@ class FirebaseTodoList extends StatelessWidget {
                   ),
                 ],
                 child: ListTile(
-                  title: Text(documentName),
+                  title: Text(title), // Display title instead of documentName
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -271,6 +272,11 @@ class _InventoryState extends State<Inventory> {
   Future<void> _showAddDialog(BuildContext context) async {
     String? _chosenValue = selectedCategory;
 
+    // Clear text controllers
+    _titleController.clear();
+    _quantityController.clear();
+    _weightController.clear();
+
     await showDialog(
       context: context,
       builder: (context) {
@@ -328,9 +334,6 @@ class _InventoryState extends State<Inventory> {
                       selectedCategory = _chosenValue;
                     });
                     _addItem();
-                    _titleController.clear();
-                    _quantityController.clear();
-                    _weightController.clear();
                     Navigator.pop(context);
                   },
                   child: Text('Add'),
@@ -343,7 +346,18 @@ class _InventoryState extends State<Inventory> {
     );
   }
 
-  Future<void> _showEditDialog(BuildContext context, String documentId, String quantity, String weight) async {
+  Future<void> _showEditDialog(BuildContext context, String documentId,
+      String quantity, String weight, String title) async {
+    if (documentId.isEmpty) {
+      // If documentId is empty, show an error message or handle the situation accordingly
+      print('Error: Document ID is empty');
+      return;
+    }
+
+    _titleController.text = title; // Set initial value for the title
+    _quantityController.text = quantity; // Set initial value for the quantity
+    _weightController.text = weight; // Set initial value for the weight
+
     await showDialog(
       context: context,
       builder: (context) {
@@ -375,10 +389,11 @@ class _InventoryState extends State<Inventory> {
             ),
             ElevatedButton(
               onPressed: () {
-                _updateItem(documentId);
-                _titleController.clear();
-                _quantityController.clear();
-                _weightController.clear();
+                String newTitle = _titleController.text;
+                String newQuantity = _quantityController.text;
+                String newWeight = _weightController.text;
+                _updateItem(documentId, newTitle, newQuantity,
+                    newWeight); // Call updateItem with the documentId and updated values
                 Navigator.pop(context);
               },
               child: Text('Update'),
@@ -389,21 +404,27 @@ class _InventoryState extends State<Inventory> {
     );
   }
 
-  void _updateItem(String documentId) {
-    String title = _titleController.text;
-    String quantity = _quantityController.text;
-    String weight = _weightController.text;
-    if (selectedCategory != null && globalConnectCode != null) {
-      firebaseTodo = FirebaseTodo(
-        category: selectedCategory!,
-        globalConnectCode: globalConnectCode!,
-      );
-      firebaseTodo!.updateTodo(
-        docId: documentId,
-        title: title,
-        quantity: quantity,
-        weight: weight,
-      );
+  void _updateItem(String documentId, String title, String quantity, String weight) async {
+    if (documentId.isNotEmpty && title.isNotEmpty) { // Ensure both documentId and title are not empty
+      if (selectedCategory != null && globalConnectCode != null) {
+        firebaseTodo = FirebaseTodo(
+          category: selectedCategory!,
+          globalConnectCode: globalConnectCode!,
+        );
+
+        // Update the document with the new title
+        await firebaseTodo!.updateTodo(
+          docId: documentId, // Use the original document ID
+          title: title,
+          quantity: quantity,
+          weight: weight,
+        );
+
+        // Refresh the page by calling setState
+        setState(() {});
+      }
+    } else {
+      print('Error: Document ID or title is empty');
     }
   }
 }
