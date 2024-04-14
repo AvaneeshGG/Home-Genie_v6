@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class FirebaseTodo {
   late CollectionReference _todosCollection;
@@ -50,8 +51,12 @@ class FirebaseTodo {
 
 class FirebaseTodoList extends StatelessWidget {
   final FirebaseTodo firebaseTodo;
+  final Function(BuildContext, String, String, String) showEditDialog;
 
-  FirebaseTodoList({required this.firebaseTodo});
+  FirebaseTodoList({
+    required this.firebaseTodo,
+    required this.showEditDialog,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,19 +76,36 @@ class FirebaseTodoList extends StatelessWidget {
               String weight = data['weight'] != null
                   ? data['weight'].toString()
                   : 'N/A';
-              return ListTile(
-                title: Text(documentName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Weight: $weight'),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () {
-                    firebaseTodo.deleteTodo(docId: inventory.id);
-                  },
+              return Slidable(
+                actionPane: SlidableDrawerActionPane(),
+                actions: [
+                  IconSlideAction(
+                    caption: 'Edit',
+                    color: Colors.green,
+                    icon: Icons.edit,
+                    onTap: () {
+                      showEditDialog(context, documentName, data['quantity'], data['weight']);
+                    },
+                  ),
+                ],
+                secondaryActions: <Widget>[
+                  IconSlideAction(
+                    caption: 'Delete',
+                    color: Colors.red,
+                    icon: Icons.delete,
+                    onTap: () {
+                      firebaseTodo.deleteTodo(docId: inventory.id);
+                    },
+                  ),
+                ],
+                child: ListTile(
+                  title: Text(documentName),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Weight: $weight'),
+                    ],
+                  ),
                 ),
               );
             },
@@ -163,6 +185,7 @@ class _InventoryState extends State<Inventory> {
                   category: 'fruits',
                   globalConnectCode: globalConnectCode ?? '',
                 ),
+                showEditDialog: _showEditDialog,
               ),
             ),
             _buildExpandableSection(
@@ -172,6 +195,7 @@ class _InventoryState extends State<Inventory> {
                   category: 'vegetables',
                   globalConnectCode: globalConnectCode ?? '',
                 ),
+                showEditDialog: _showEditDialog,
               ),
             ),
             _buildExpandableSection(
@@ -181,6 +205,7 @@ class _InventoryState extends State<Inventory> {
                   category: 'daily essentials',
                   globalConnectCode: globalConnectCode ?? '',
                 ),
+                showEditDialog: _showEditDialog,
               ),
             ),
             _buildExpandableSection(
@@ -190,6 +215,7 @@ class _InventoryState extends State<Inventory> {
                   category: 'medicines',
                   globalConnectCode: globalConnectCode ?? '',
                 ),
+                showEditDialog: _showEditDialog,
               ),
             ),
             _buildExpandableSection(
@@ -199,6 +225,7 @@ class _InventoryState extends State<Inventory> {
                   category: 'pulses',
                   globalConnectCode: globalConnectCode ?? '',
                 ),
+                showEditDialog: _showEditDialog,
               ),
             ),
             Text(
@@ -315,5 +342,68 @@ class _InventoryState extends State<Inventory> {
       },
     );
   }
-}
 
+  Future<void> _showEditDialog(BuildContext context, String documentId, String quantity, String weight) async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Item Name'),
+              ),
+              TextField(
+                controller: _quantityController,
+                decoration: InputDecoration(labelText: 'Quantity'),
+              ),
+              TextField(
+                controller: _weightController,
+                decoration: InputDecoration(labelText: 'Weight'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _updateItem(documentId);
+                _titleController.clear();
+                _quantityController.clear();
+                _weightController.clear();
+                Navigator.pop(context);
+              },
+              child: Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateItem(String documentId) {
+    String title = _titleController.text;
+    String quantity = _quantityController.text;
+    String weight = _weightController.text;
+    if (selectedCategory != null && globalConnectCode != null) {
+      firebaseTodo = FirebaseTodo(
+        category: selectedCategory!,
+        globalConnectCode: globalConnectCode!,
+      );
+      firebaseTodo!.updateTodo(
+        docId: documentId,
+        title: title,
+        quantity: quantity,
+        weight: weight,
+      );
+    }
+  }
+}
