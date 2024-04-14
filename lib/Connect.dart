@@ -72,14 +72,16 @@ class _ConnectState extends State<Connect> {
       accessCode = code;
     });
 
+    // Save the access code in shared preferences
+    await _saveGlobalConnectCode(code);
+
     // Check if the sharedCollection with access code exists
     final sharedCollectionRef =
     FirebaseFirestore.instance.collection('sharedCollection').doc(code);
     final sharedCollectionSnapshot = await sharedCollectionRef.get();
     if (!sharedCollectionSnapshot.exists) {
       // Create a new subcollection with the access code as the collection ID
-      await sharedCollectionRef
-          .set({'accessCode': code}, SetOptions(merge: true));
+      await sharedCollectionRef.set({'accessCode': code}, SetOptions(merge: true));
 
       // Add the user's email to the members collection
       final membersRef = sharedCollectionRef.collection('members');
