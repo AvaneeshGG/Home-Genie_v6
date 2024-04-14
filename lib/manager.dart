@@ -22,7 +22,7 @@ void fetchData(String response) async {
     var items = jsonResponse['items'];
     var labels = jsonResponse['labels'];
 
-    if (labels.contains('add')) {
+    if (labels.contains('add') && labels.contains('pantry')) {
       // Retrieve the global connect code
       String? firebaseCode = await _getFirebaseCode();
       if (firebaseCode != null) {
@@ -48,8 +48,35 @@ void fetchData(String response) async {
       } else {
         print('Global connect code not found in SharedPreferences.');
       }
-    } else {
-      print('Label "add" not found in the JSON response.');
+    }
+
+    else if(labels.contains('add') && labels.contains('to-do')){
+
+
+    }
+
+    else if(labels.contains('fetch')){
+
+
+    }
+    // remove the entire things
+    else if(labels.contains('remove') && labels.contains('pantry')){
+
+
+    }
+    // add specific for quantity
+    else if(labels.contains('add') && labels.contains('pantry') && items.contains('quantity')){
+
+
+    }
+    // add specific for quantity
+    else if(labels.contains('add') && labels.contains('pantry') && items.contains('metric_weight')){
+
+
+    }
+
+    else {
+      print('Bitch ass the give case does not exist');
     }
   } else {
     throw Exception('Failed to load data');
@@ -69,9 +96,8 @@ Future<void> addFruit({
         .collection('sharedCollection')
         .doc(firebaseCode)
         .collection(category)
-        .doc(itemName) // Use item name as document ID
-        .set({
-      'item': itemName,
+        .add({
+      'title': itemName,
       'quantity': quantity,
       'metric_weight': metricWeight,
     });
@@ -80,5 +106,3 @@ Future<void> addFruit({
     print('Error adding fruit: $e');
   }
 }
-
-
