@@ -242,68 +242,75 @@ class _InventoryState extends State<Inventory> {
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
-    String? _chosenValue;
+    String? _chosenValue = selectedCategory;
 
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Add Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<String>(
-                value: selectedCategory,
-                onChanged: (String? value) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
-                items: <String>[
-                  'fruits',
-                  'vegetables',
-                  'daily essentials',
-                  'medicines',
-                  'pulses'
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Add Item'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton<String>(
+                    value: _chosenValue,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _chosenValue = value;
+                      });
+                    },
+                    items: <String>[
+                      'fruits',
+                      'vegetables',
+                      'daily essentials',
+                      'medicines',
+                      'pulses'
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(labelText: 'Item Name'),
+                  ),
+                  TextField(
+                    controller: _quantityController,
+                    decoration: InputDecoration(labelText: 'Quantity'),
+                  ),
+                  TextField(
+                    controller: _weightController,
+                    decoration: InputDecoration(labelText: 'Weight'),
+                  ),
+                ],
               ),
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(labelText: 'Item Name'),
-              ),
-              TextField(
-                controller: _quantityController,
-                decoration: InputDecoration(labelText: 'Quantity'),
-              ),
-              TextField(
-                controller: _weightController,
-                decoration: InputDecoration(labelText: 'Weight'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _addItem();
-                _titleController.clear();
-                _quantityController.clear();
-                _weightController.clear();
-                Navigator.pop(context);
-              },
-              child: Text('Add'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedCategory = _chosenValue;
+                    });
+                    _addItem();
+                    _titleController.clear();
+                    _quantityController.clear();
+                    _weightController.clear();
+                    Navigator.pop(context);
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
