@@ -65,6 +65,26 @@ class FirebaseTodoList extends StatelessWidget {
     required this.showEditDialog,
   });
 
+  Color _calculateBackgroundColor(String quantity, String weight, String limit) {
+    bool isQuantityNA = quantity == 'N/A';
+    bool isWeightNA = weight == 'N/A';
+
+    if (isQuantityNA && isWeightNA) {
+      return Colors.white;
+    } else {
+      int parsedQuantity = isQuantityNA ? 0 : int.tryParse(quantity) ?? 0;
+      int parsedWeight = isWeightNA ? 0 : int.tryParse(weight) ?? 0;
+      int parsedLimit = int.tryParse(limit) ?? 2;
+
+      if ((isQuantityNA && parsedWeight < parsedLimit) || (isWeightNA && parsedQuantity < parsedLimit)) {
+        return Colors.red[100] ?? Colors.red;
+      } else {
+        return Colors.white;
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -88,6 +108,11 @@ class FirebaseTodoList extends StatelessWidget {
                 String title = data['title'] != null ? data['title'].toString() : 'Untitled'; // Get the title from data
                 String weight = data['weight'] != null ? data['weight'].toString() : 'N/A';
                 String limit = data['limit'] != null ? data['limit'].toString() : '2';
+                String quantity = data['quantity'] != null ? data['quantity'].toString() : 'N/A';
+
+                // Determine the background color based on the quantity and the limit
+                Color backgroundColor = _calculateBackgroundColor(quantity, weight, limit);
+
                 return Slidable(
                   actionPane: SlidableDrawerActionPane(),
                   actions: [
@@ -96,7 +121,7 @@ class FirebaseTodoList extends StatelessWidget {
                       color: Colors.green,
                       icon: Icons.edit,
                       onTap: () {
-                        showEditDialog(context, documentName, data['quantity'], data['weight'], title, limit);
+                        showEditDialog(context, documentName, quantity, weight, title, limit);
                       },
                     ),
                   ],
@@ -110,14 +135,18 @@ class FirebaseTodoList extends StatelessWidget {
                       },
                     ),
                   ],
-                  child: ListTile(
-                    title: Text(title), // Display title instead of documentName
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Weight: $weight'),
-                        Text('Limit: $limit'),
-                      ],
+                  child: Container(
+                    color: backgroundColor, // Set the background color
+                    child: ListTile(
+                      title: Text(title), // Display title instead of documentName
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Quantity: $quantity'),
+                          Text('Weight: $weight'),
+                          Text('Limit: $limit'),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -378,8 +407,8 @@ class _InventoryState extends State<Inventory> {
 
     // Set initial values for the TextFields
     _titleController.text = title.isNotEmpty ? title : 'Untitled';
-    _quantityController.text = quantity.isNotEmpty ? quantity : 'N/A';
-    _weightController.text = weight.isNotEmpty ? weight : 'N/A';
+    _quantityController.text = quantity.isNotEmpty ? quantity : '0';
+    _weightController.text = weight.isNotEmpty ? weight : '0';
     _limitController.text = limit.isNotEmpty ? limit : '2';
 
     await showDialog(
@@ -418,8 +447,8 @@ class _InventoryState extends State<Inventory> {
             ElevatedButton(
               onPressed: () {
                 String newTitle = _titleController.text;
-                String newQuantity = _quantityController.text;
-                String newWeight = _weightController.text;
+                String newQuantity = _quantityController.text.isNotEmpty ? _quantityController.text : 'N/A';
+                String newWeight = _weightController.text.isNotEmpty ? _weightController.text : 'N/A';
                 String newLimit = _limitController.text;
                 _updateItem(documentId, newTitle, newQuantity, newWeight, newLimit); // Pass the limit parameter
                 Navigator.pop(context);
@@ -431,7 +460,6 @@ class _InventoryState extends State<Inventory> {
       },
     );
   }
-
 
   void _updateItem(String documentId, String title, String quantity, String weight, String limit) async {
     if (documentId.isNotEmpty && title.isNotEmpty) { // Ensure both documentId and title are not empty
@@ -458,4 +486,3 @@ class _InventoryState extends State<Inventory> {
     }
   }
 }
-
