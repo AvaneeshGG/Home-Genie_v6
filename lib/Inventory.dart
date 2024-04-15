@@ -17,11 +17,13 @@ class FirebaseTodo {
     required String title,
     required String quantity,
     required String weight,
+    required String limit,
   }) async {
     await _todosCollection.add({
       'title': title,
       'quantity': quantity,
       'weight': weight,
+      'limit': limit,
     });
   }
 
@@ -30,6 +32,7 @@ class FirebaseTodo {
     required String title,
     required String quantity,
     required String weight,
+    required String limit,
   }) async {
     // Ensure that docId is not empty or null
     assert(docId.isNotEmpty);
@@ -38,6 +41,7 @@ class FirebaseTodo {
       'title': title,
       'quantity': quantity,
       'weight': weight,
+      'limit': limit,
     });
   }
 
@@ -54,7 +58,7 @@ class FirebaseTodo {
 
 class FirebaseTodoList extends StatelessWidget {
   final FirebaseTodo firebaseTodo;
-  final Function(BuildContext, String, String, String, String) showEditDialog;
+  final Function(BuildContext, String, String, String, String, String) showEditDialog;
 
   FirebaseTodoList({
     required this.firebaseTodo,
@@ -63,60 +67,69 @@ class FirebaseTodoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: firebaseTodo.getTodos(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          var todos = snapshot.data!.docs;
-          return ListView.builder(
-            shrinkWrap: true,
-            itemCount: todos.length,
-            itemBuilder: (context, index) {
-              var inventory = todos[index];
-              String documentName = inventory.id;
-              Map<String, dynamic> data = inventory.data() as Map<String, dynamic>;
-              String title = data['title'] != null ? data['title'].toString() : 'Untitled'; // Get the title from data
-              String weight = data['weight'] != null ? data['weight'].toString() : 'N/A';
-              return Slidable(
-                actionPane: SlidableDrawerActionPane(),
-                actions: [
-                  IconSlideAction(
-                    caption: 'Edit',
-                    color: Colors.green,
-                    icon: Icons.edit,
-                    onTap: () {
-                      showEditDialog(context, documentName, data['quantity'], data['weight'], title);
-                    },
-                  ),
-                ],
-                secondaryActions: <Widget>[
-                  IconSlideAction(
-                    caption: 'Delete',
-                    color: Colors.red,
-                    icon: Icons.delete,
-                    onTap: () {
-                      firebaseTodo.deleteTodo(docId: inventory.id);
-                    },
-                  ),
-                ],
-                child: ListTile(
-                  title: Text(title), // Display title instead of documentName
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Weight: $weight'),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        } else {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Implement your refresh logic here
+        // For example, you could fetch new data from Firebase
+        // or reload the existing data
       },
+      child: StreamBuilder<QuerySnapshot>(
+        stream: firebaseTodo.getTodos(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var todos = snapshot.data!.docs;
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: todos.length,
+              itemBuilder: (context, index) {
+                var inventory = todos[index];
+                String documentName = inventory.id;
+                Map<String, dynamic> data = inventory.data() as Map<String, dynamic>;
+                String title = data['title'] != null ? data['title'].toString() : 'Untitled'; // Get the title from data
+                String weight = data['weight'] != null ? data['weight'].toString() : 'N/A';
+                String limit = data['limit'] != null ? data['limit'].toString() : '2';
+                return Slidable(
+                  actionPane: SlidableDrawerActionPane(),
+                  actions: [
+                    IconSlideAction(
+                      caption: 'Edit',
+                      color: Colors.green,
+                      icon: Icons.edit,
+                      onTap: () {
+                        showEditDialog(context, documentName, data['quantity'], data['weight'], title, limit);
+                      },
+                    ),
+                  ],
+                  secondaryActions: <Widget>[
+                    IconSlideAction(
+                      caption: 'Delete',
+                      color: Colors.red,
+                      icon: Icons.delete,
+                      onTap: () {
+                        firebaseTodo.deleteTodo(docId: inventory.id);
+                      },
+                    ),
+                  ],
+                  child: ListTile(
+                    title: Text(title), // Display title instead of documentName
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Weight: $weight'),
+                        Text('Limit: $limit'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
     );
   }
 }
@@ -132,6 +145,7 @@ class _InventoryState extends State<Inventory> {
   late TextEditingController _titleController;
   late TextEditingController _quantityController;
   late TextEditingController _weightController;
+  late TextEditingController _limitController;
   String? selectedCategory;
   String? globalConnectCode;
   FirebaseTodo? firebaseTodo;
@@ -144,6 +158,7 @@ class _InventoryState extends State<Inventory> {
     _titleController = TextEditingController();
     _quantityController = TextEditingController();
     _weightController = TextEditingController();
+    _limitController = TextEditingController();
   }
 
   void _getGlobalConnectCode() async {
@@ -157,6 +172,7 @@ class _InventoryState extends State<Inventory> {
     String title = _titleController.text;
     String quantity = _quantityController.text;
     String weight = _weightController.text;
+    String limit = _limitController.text;
     if (selectedCategory != null && globalConnectCode != null) {
       firebaseTodo = FirebaseTodo(
         category: selectedCategory!,
@@ -166,6 +182,7 @@ class _InventoryState extends State<Inventory> {
         title: title,
         quantity: quantity,
         weight: weight,
+        limit: limit,
       );
     }
   }
@@ -276,6 +293,7 @@ class _InventoryState extends State<Inventory> {
     _titleController.clear();
     _quantityController.clear();
     _weightController.clear();
+    _limitController.clear();
 
     await showDialog(
       context: context,
@@ -319,6 +337,10 @@ class _InventoryState extends State<Inventory> {
                     controller: _weightController,
                     decoration: InputDecoration(labelText: 'Weight'),
                   ),
+                  TextField(
+                    controller: _limitController,
+                    decoration: InputDecoration(labelText: 'Limit'),
+                  ),
                 ],
               ),
               actions: [
@@ -347,16 +369,18 @@ class _InventoryState extends State<Inventory> {
   }
 
   Future<void> _showEditDialog(BuildContext context, String documentId,
-      String quantity, String weight, String title) async {
+      String quantity, String weight, String title, String limit) async {
     if (documentId.isEmpty) {
       // If documentId is empty, show an error message or handle the situation accordingly
       print('Error: Document ID is empty');
       return;
     }
 
-    _titleController.text = title; // Set initial value for the title
-    _quantityController.text = quantity; // Set initial value for the quantity
-    _weightController.text = weight; // Set initial value for the weight
+    // Set initial values for the TextFields
+    _titleController.text = title.isNotEmpty ? title : 'Untitled';
+    _quantityController.text = quantity.isNotEmpty ? quantity : 'N/A';
+    _weightController.text = weight.isNotEmpty ? weight : 'N/A';
+    _limitController.text = limit.isNotEmpty ? limit : '2';
 
     await showDialog(
       context: context,
@@ -378,6 +402,10 @@ class _InventoryState extends State<Inventory> {
                 controller: _weightController,
                 decoration: InputDecoration(labelText: 'Weight'),
               ),
+              TextField(
+                controller: _limitController,
+                decoration: InputDecoration(labelText: 'Limit'),
+              ),
             ],
           ),
           actions: [
@@ -392,8 +420,8 @@ class _InventoryState extends State<Inventory> {
                 String newTitle = _titleController.text;
                 String newQuantity = _quantityController.text;
                 String newWeight = _weightController.text;
-                _updateItem(documentId, newTitle, newQuantity,
-                    newWeight); // Call updateItem with the documentId and updated values
+                String newLimit = _limitController.text;
+                _updateItem(documentId, newTitle, newQuantity, newWeight, newLimit); // Pass the limit parameter
                 Navigator.pop(context);
               },
               child: Text('Update'),
@@ -404,7 +432,8 @@ class _InventoryState extends State<Inventory> {
     );
   }
 
-  void _updateItem(String documentId, String title, String quantity, String weight) async {
+
+  void _updateItem(String documentId, String title, String quantity, String weight, String limit) async {
     if (documentId.isNotEmpty && title.isNotEmpty) { // Ensure both documentId and title are not empty
       if (selectedCategory != null && globalConnectCode != null) {
         firebaseTodo = FirebaseTodo(
@@ -412,12 +441,13 @@ class _InventoryState extends State<Inventory> {
           globalConnectCode: globalConnectCode!,
         );
 
-        // Update the document with the new title
+        // Update the document with the new title and limit
         await firebaseTodo!.updateTodo(
           docId: documentId, // Use the original document ID
           title: title,
           quantity: quantity,
           weight: weight,
+          limit: limit, // Pass the limit value
         );
 
         // Refresh the page by calling setState
@@ -428,3 +458,4 @@ class _InventoryState extends State<Inventory> {
     }
   }
 }
+
