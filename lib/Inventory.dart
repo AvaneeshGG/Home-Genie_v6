@@ -18,6 +18,7 @@ class FirebaseTodo {
     required String quantity,
     required String weight,
     required String limit,
+    required String globalConnectCode,
   }) async {
     await _todosCollection.add({
       'title': title,
@@ -25,6 +26,20 @@ class FirebaseTodo {
       'weight': weight,
       'limit': limit,
     });
+
+    int parsedQuantity = quantity == 'N/A' ? 0 : int.tryParse(quantity) ?? 0;
+    int parsedWeight = weight == 'N/A' ? 0 : int.tryParse(weight) ?? 0;
+    int parsedLimit = int.tryParse(limit) ?? 2;
+
+    // Check if either quantity or weight is less than the limit and not 'N/A'
+    if ((parsedQuantity < parsedLimit && quantity != 'N/A') || (parsedWeight < parsedLimit && weight != 'N/A')) {
+      // Add the title to the "refill" subcollection
+      await FirebaseFirestore.instance
+          .collection('sharedCollection')
+          .doc(globalConnectCode)
+          .collection('refill')
+          .add({'title': title});
+    }
   }
 
   Future<void> updateTodo({
@@ -83,7 +98,6 @@ class FirebaseTodoList extends StatelessWidget {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -198,10 +212,10 @@ class _InventoryState extends State<Inventory> {
   }
 
   void _addItem() {
-    String title = _titleController.text;
-    String quantity = _quantityController.text;
-    String weight = _weightController.text;
-    String limit = _limitController.text;
+    String title = _titleController.text.isEmpty ? 'N/A' : _titleController.text;
+    String quantity = _quantityController.text.isEmpty ? 'N/A' : _quantityController.text;
+    String weight = _weightController.text.isEmpty ? 'N/A' : _weightController.text;
+    String limit = _limitController.text.isEmpty ? '2' : _limitController.text;
     if (selectedCategory != null && globalConnectCode != null) {
       firebaseTodo = FirebaseTodo(
         category: selectedCategory!,
@@ -212,9 +226,11 @@ class _InventoryState extends State<Inventory> {
         quantity: quantity,
         weight: weight,
         limit: limit,
+        globalConnectCode: globalConnectCode!,
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -416,26 +432,36 @@ class _InventoryState extends State<Inventory> {
       builder: (context) {
         return AlertDialog(
           title: Text('Edit Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(labelText: 'Item Name'),
-              ),
-              TextField(
-                controller: _quantityController,
-                decoration: InputDecoration(labelText: 'Quantity'),
-              ),
-              TextField(
-                controller: _weightController,
-                decoration: InputDecoration(labelText: 'Weight'),
-              ),
-              TextField(
-                controller: _limitController,
-                decoration: InputDecoration(labelText: 'Limit'),
-              ),
-            ],
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(labelText: 'Item Name'),
+                  ),
+                  TextField(
+                    controller: _quantityController,
+                    decoration: InputDecoration(labelText: 'Quantity'),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
+                  ),
+                  TextField(
+                    controller: _weightController,
+                    decoration: InputDecoration(labelText: 'Weight'),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
+                  ),
+                  TextField(
+                    controller: _limitController,
+                    decoration: InputDecoration(labelText: 'Limit'),
+                  ),
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -447,8 +473,10 @@ class _InventoryState extends State<Inventory> {
             ElevatedButton(
               onPressed: () {
                 String newTitle = _titleController.text;
-                String newQuantity = _quantityController.text.isNotEmpty ? _quantityController.text : 'N/A';
-                String newWeight = _weightController.text.isNotEmpty ? _weightController.text : 'N/A';
+                String newQuantity =
+                _quantityController.text.isNotEmpty ? _quantityController.text : 'N/A';
+                String newWeight =
+                _weightController.text.isNotEmpty ? _weightController.text : 'N/A';
                 String newLimit = _limitController.text;
                 _updateItem(documentId, newTitle, newQuantity, newWeight, newLimit); // Pass the limit parameter
                 Navigator.pop(context);
@@ -478,6 +506,31 @@ class _InventoryState extends State<Inventory> {
           limit: limit, // Pass the limit value
         );
 
+        int parsedQuantity = quantity == 'N/A' ? 0 : int.tryParse(quantity) ?? 0;
+        int parsedWeight = weight == 'N/A' ? 0 : int.tryParse(weight) ?? 0;
+        int parsedLimit = int.tryParse(limit) ?? 2;
+
+        // Check if either quantity or weight is less than the limit and not 'N/A'
+        if ((parsedQuantity < parsedLimit && quantity != 'N/A') || (parsedWeight < parsedLimit && weight != 'N/A')) {
+          // Add the title to the "refill" subcollection
+          await FirebaseFirestore.instance
+              .collection('sharedCollection')
+              .doc(globalConnectCode)
+              .collection('refill')
+              .add({'title': title});
+        } else {
+          // Remove the title from the "refill" subcollection
+          QuerySnapshot refillSnapshot = await FirebaseFirestore.instance
+              .collection('sharedCollection')
+              .doc(globalConnectCode)
+              .collection('refill')
+              .where('title', isEqualTo: title)
+              .get();
+          refillSnapshot.docs.forEach((doc) {
+            doc.reference.delete();
+          });
+        }
+
         // Refresh the page by calling setState
         setState(() {});
       }
@@ -485,4 +538,6 @@ class _InventoryState extends State<Inventory> {
       print('Error: Document ID or title is empty');
     }
   }
+
+
 }
