@@ -89,7 +89,7 @@ class FirebaseTodoList extends StatelessWidget {
       return Colors.white;
     } else {
       int parsedQuantity = isQuantityNA ? 0 : int.tryParse(quantity) ?? 0;
-      int parsedWeight = isWeightNA ? 0 : int.tryParse(weight) ?? 0;
+      double parsedWeight = isWeightNA ? 0 : parseWeight(weight);
       int parsedLimit = int.tryParse(limit) ?? 2;
 
       if ((isQuantityNA && parsedWeight < parsedLimit) || (isWeightNA && parsedQuantity < parsedLimit)) {
@@ -97,6 +97,21 @@ class FirebaseTodoList extends StatelessWidget {
       } else {
         return Colors.white;
       }
+    }
+  }
+
+  double parseWeight(String weightString) {
+    // Split the weight string into its numerical value and unit
+    List<String> parts = weightString.split(" ");
+    // Ensure the parts contain at least two elements
+    if (parts.length >= 2) {
+      // Extract the numerical value and convert it to a double
+      double numericValue = double.tryParse(parts[0]) ?? 0.0;
+      // Return the parsed double value
+      return numericValue;
+    } else {
+      // Handle invalid input, return 0.0 if parsing fails
+      return 0.0;
     }
   }
 

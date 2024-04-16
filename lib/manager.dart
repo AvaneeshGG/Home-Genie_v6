@@ -13,8 +13,9 @@ Future<String?> _getFirebaseCode() async {
 
 void fetchData(String response) async {
   if (response != null) {
-    Map<String, dynamic> jsonResponse = jsonDecode(response);
-    print(jsonResponse);
+    Map<String, dynamic> jsonResponse = jsonDecode(
+        '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["remove","pantry"]}');
+    //print(jsonResponse);
 
     var items = jsonResponse['items'];
     var labels = jsonResponse['labels'];
@@ -44,22 +45,28 @@ void fetchData(String response) async {
             if (exists) {
               print('$itemName in category $category already exists.');
               // Fetch the quantity and metric weight from Firebase
-              String? existingQuantity = await getQuantityFromFirebase(firebaseCode, itemName, category);
-              String? existingMetricWeight = await getMetricWeightFromFirebase(firebaseCode, itemName, category);
+              String? existingQuantity = await getQuantityFromFirebase(
+                  firebaseCode, itemName, category);
+              String? existingMetricWeight = await getMetricWeightFromFirebase(
+                  firebaseCode, itemName, category);
 
-              if (existingQuantity != null && existingQuantity != 'N/A' && quantity != null) {
+              if (existingQuantity != null && existingQuantity != 'N/A' &&
+                  quantity != null) {
                 // Convert existing quantity to an integer, add new quantity, and save as a string to Firebase
                 int existingQuantityInt = int.tryParse(existingQuantity) ?? 0;
                 int newQuantityInt = int.tryParse(quantity) ?? 0;
                 int totalQuantity = existingQuantityInt + newQuantityInt;
-                await updateQuantityInFirebase(firebaseCode, itemName, category, totalQuantity.toString());
+                await updateQuantityInFirebase(
+                    firebaseCode, itemName, category, totalQuantity.toString());
                 print('Quantity for $itemName is not N/A: $totalQuantity');
-              } else if (existingMetricWeight != null && existingMetricWeight != 'N/A' && metricWeight != null) {
-
-
-                String result = metricCalc(existingMetricWeight, metricWeight, "add");
-
-                print('Metric weight for $itemName is not N/A: $existingMetricWeight');
+              } else if (existingMetricWeight != null &&
+                  existingMetricWeight != 'N/A' && metricWeight != null) {
+                String result = metricCalc(
+                    existingMetricWeight, metricWeight, "add");
+                await updateMetricWeightInFirebase(
+                    firebaseCode, itemName, category, result);
+                print(
+                    'Metric weight for $itemName is not N/A: $existingMetricWeight');
               } else {
                 print('Both quantity and metric_weight for $itemName are N/A.');
               }
@@ -69,7 +76,8 @@ void fetchData(String response) async {
                 firebaseCode: firebaseCode,
                 itemName: itemName,
                 category: category,
-                quantity: quantity, // n/a
+                quantity: quantity,
+                // n/a
                 metricWeight: metricWeight, //5kg
               );
             }
@@ -83,28 +91,101 @@ void fetchData(String response) async {
     }
 
 
-    else if(labels.contains('add') && labels.contains('to-do')) {
+    else if (labels.contains('add') && labels.contains('to-do')) {
       // Handle 'add' and 'to-do' labels
-    } else if(labels.contains('fetch')) {
-      // Handle 'fetch' label
-    } else if(labels.contains('remove') && labels.contains('pantry')) {
-      // Handle 'remove' and 'pantry' labels
-
-
-    } else if(labels.contains('remove') && labels.contains('pantry') && items.contains('quantity')) {
-      // Handle 'add', 'pantry', and 'quantity' labels
-
-
-
-    } else if(labels.contains('remove') && labels.contains('pantry') && items.contains('metric_weight')) {
-      // Handle 'add', 'pantry', and 'metric_weight' labels
-    } else {
-      print('The given case does not exist');
     }
-  } else {
-    throw Exception('Failed to load data');
+    else if (labels.contains('fetch')) {
+
+
   }
-}
+      // Handle 'fetch' label
+    else if (labels.contains('remove') && labels.contains('pantry')) {
+      print("Removing");
+    // Retrieve the global connect code
+    String? firebaseCode = await _getFirebaseCode();
+    if (firebaseCode != null) {
+      for (var item in items) {
+        var itemName = item['item'] ?? null;
+        var category = item['category'] ?? null;
+        var quantity = item['quantity'] ?? null;
+        var metricWeight = item['metric_weight'] ?? null;
+        print(itemName);
+        print(category);
+        print(quantity);
+        print(metricWeight);
+
+        if (firebaseCode.isNotEmpty && category.isNotEmpty) {
+          // Check if item already exists
+          bool exists = await checkIfItemExists(
+            firebaseCode,
+            itemName,
+            category,
+          );
+
+          if (exists) {
+            print('$itemName in category $category already exists.');
+            // Fetch the quantity and metric weight from Firebase
+            String? existingQuantity = await getQuantityFromFirebase(
+                firebaseCode, itemName, category);
+            String? existingMetricWeight = await getMetricWeightFromFirebase(
+                firebaseCode, itemName, category);
+
+            if (existingQuantity != null && existingQuantity != 'N/A' &&
+                quantity != null) {
+              // Convert existing quantity to an integer, add new quantity, and save as a string to Firebase
+              int existingQuantityInt = int.tryParse(existingQuantity) ?? 0;
+              int newQuantityInt = int.tryParse(quantity) ?? 0;
+              int totalQuantity = (existingQuantityInt - newQuantityInt);
+                if(totalQuantity<0){
+                  await deleteItemFromFirebase(firebaseCode, itemName, category);
+                }
+                else {
+                  await updateQuantityInFirebase(
+                      firebaseCode, itemName, category,
+                      totalQuantity.toString());
+                }
+              print('Quantity for $itemName is not N/A: $totalQuantity');
+            } else if (existingMetricWeight != null &&
+                existingMetricWeight != 'N/A' && metricWeight != null) {
+              String result = metricCalc(
+                  existingMetricWeight, metricWeight, "subtract");
+              print(result);
+
+              if(result=="N/A"){
+                await deleteItemFromFirebase(firebaseCode, itemName, category);
+              }
+              else {
+                await updateMetricWeightInFirebase(
+                    firebaseCode, itemName, category, result);
+              }
+              print(
+                  'Metric weight for $itemName is not N/A: $existingMetricWeight');
+            } else {
+              print('Both quantity and metric_weight for $itemName are N/A.');
+              await deleteItemFromFirebase(firebaseCode, itemName, category);
+            }
+          }
+        } else {
+          print('Global connect code not found in SharedPreferences.');
+        }
+      }
+    }
+  }
+      else if (labels.contains('remove') && labels.contains('pantry') &&
+          items.contains('quantity')) {
+        // Handle 'add', 'pantry', and 'quantity' labels
+
+
+      } else if (labels.contains('remove') && labels.contains('pantry') &&
+          items.contains('metric_weight')) {
+        // Handle 'add', 'pantry', and 'metric_weight' labels
+      } else {
+        print('The given case does not exist');
+      }
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
 
 Future<void> addFruit({
   required String firebaseCode,
@@ -121,7 +202,7 @@ Future<void> addFruit({
         .add({
       'title': itemName,
       'quantity': quantity,
-      'metric_weight': metricWeight,
+      'weight': metricWeight,
     });
     print('add + pantry block executed');
   } catch (e) {
@@ -180,7 +261,7 @@ Future<String?> getMetricWeightFromFirebase(String firebaseCode, String itemName
     if (querySnapshot.docs.isNotEmpty) {
       // Assuming there's only one document for each item in the category
       var document = querySnapshot.docs.first;
-      return document['metric_weight'];
+      return document['weight'];
     } else {
       return null; // Item not found
     }
@@ -200,7 +281,6 @@ Future<void> updateQuantityInFirebase(String firebaseCode, String itemName, Stri
         .get()
         .then((querySnapshot) {
       if (querySnapshot.docs.isNotEmpty) {
-        // Assuming there's only one document for each item in the category
         var documentID = querySnapshot.docs.first.id;
         FirebaseFirestore.instance
             .collection('sharedCollection')
@@ -215,6 +295,32 @@ Future<void> updateQuantityInFirebase(String firebaseCode, String itemName, Stri
     print('Error updating quantity in Firebase: $e');
   }
 }
+
+Future<void> updateMetricWeightInFirebase(String firebaseCode, String itemName, String category, String newMetricWeight) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('sharedCollection')
+        .doc(firebaseCode)
+        .collection(category)
+        .where('title', isEqualTo: itemName)
+        .get()
+        .then((querySnapshot) {
+      if (querySnapshot.docs.isNotEmpty) {
+        var documentID = querySnapshot.docs.first.id;
+        FirebaseFirestore.instance
+            .collection('sharedCollection')
+            .doc(firebaseCode)
+            .collection(category)
+            .doc(documentID)
+            .update({'weight': newMetricWeight});
+      }
+    });
+    print('Metric weight updated successfully for $itemName');
+  } catch (e) {
+    print('Error updating metric weight in Firebase: $e');
+  }
+}
+
 
 String metricCalc(String metric1, String metric2, String operation) {
   // Function to convert metric to kilograms
@@ -247,9 +353,12 @@ String metricCalc(String metric1, String metric2, String operation) {
       result = value1 + value2;
     } else if (operation == "subtract") {
       result = value1 - value2;
+      if(result<0){
+        return "N/A";
+      }
     } else {
       // Handle invalid operation
-      return "Invalid operation";
+      return "N/A";
     }
 
     // Construct the result string in kgs
@@ -257,5 +366,22 @@ String metricCalc(String metric1, String metric2, String operation) {
   }
 }
 
+Future<void> deleteItemFromFirebase(String firebaseCode, String itemName, String category) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('sharedCollection')
+        .doc(firebaseCode)
+        .collection(category)
+        .where('title', isEqualTo: itemName)
+        .get()
+        .then((querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        doc.reference.delete();
+      });
+    });
+    print('Item $itemName in category $category deleted successfully.');
+  } catch (e) {
+    print('Error deleting item: $e');
+  }
+}
 // Additional code goes here...
-
