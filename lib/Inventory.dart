@@ -32,7 +32,8 @@ class FirebaseTodo {
     int parsedLimit = int.tryParse(limit) ?? 2;
 
     // Check if either quantity or weight is less than the limit and not 'N/A'
-    if ((parsedQuantity < parsedLimit && quantity != 'N/A') || (parsedWeight < parsedLimit && weight != 'N/A')) {
+    if ((parsedQuantity < parsedLimit && quantity != 'N/A') ||
+        (parsedWeight < parsedLimit && weight != 'N/A')) {
       // Add the title to the "refill" subcollection
       await FirebaseFirestore.instance
           .collection('sharedCollection')
@@ -326,7 +327,9 @@ class _InventoryState extends State<Inventory> {
         style: TextStyle(fontSize: 20.0),
       ),
       children: [
-        content,
+        SingleChildScrollView(
+          child: content,
+        ),
       ],
     );
   }
@@ -347,46 +350,48 @@ class _InventoryState extends State<Inventory> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text('Add Item'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButton<String>(
-                    value: _chosenValue,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _chosenValue = value;
-                      });
-                    },
-                    items: <String>[
-                      'fruits',
-                      'vegetables',
-                      'daily essentials',
-                      'medicines',
-                      'pulses'
-                    ].map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(labelText: 'Item Name'),
-                  ),
-                  TextField(
-                    controller: _quantityController,
-                    decoration: InputDecoration(labelText: 'Quantity'),
-                  ),
-                  TextField(
-                    controller: _weightController,
-                    decoration: InputDecoration(labelText: 'Weight'),
-                  ),
-                  TextField(
-                    controller: _limitController,
-                    decoration: InputDecoration(labelText: 'Limit'),
-                  ),
-                ],
+              content: SingleChildScrollView( // Wrap the content with SingleChildScrollView
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButton<String>(
+                      value: _chosenValue,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _chosenValue = value;
+                        });
+                      },
+                      items: <String>[
+                        'fruits',
+                        'vegetables',
+                        'daily essentials',
+                        'medicines',
+                        'pulses'
+                      ].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(labelText: 'Item Name'),
+                    ),
+                    TextField(
+                      controller: _quantityController,
+                      decoration: InputDecoration(labelText: 'Quantity'),
+                    ),
+                    TextField(
+                      controller: _weightController,
+                      decoration: InputDecoration(labelText: 'Weight'),
+                    ),
+                    TextField(
+                      controller: _limitController,
+                      decoration: InputDecoration(labelText: 'Limit'),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -412,6 +417,7 @@ class _InventoryState extends State<Inventory> {
       },
     );
   }
+
 
   Future<void> _showEditDialog(BuildContext context, String documentId,
       String quantity, String weight, String title, String limit) async {
