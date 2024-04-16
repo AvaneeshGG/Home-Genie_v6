@@ -14,7 +14,7 @@ Future<String?> _getFirebaseCode() async {
 void fetchData(String response) async {
   if (response != null) {
     Map<String, dynamic> jsonResponse = jsonDecode(
-        '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["remove","pantry"]}');
+        '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["add","pantry"]}');
     //print(jsonResponse);
 
     var items = jsonResponse['items'];
@@ -171,15 +171,7 @@ void fetchData(String response) async {
       }
     }
   }
-      else if (labels.contains('remove') && labels.contains('pantry') &&
-          items.contains('quantity')) {
-        // Handle 'add', 'pantry', and 'quantity' labels
-
-
-      } else if (labels.contains('remove') && labels.contains('pantry') &&
-          items.contains('metric_weight')) {
-        // Handle 'add', 'pantry', and 'metric_weight' labels
-      } else {
+ else {
         print('The given case does not exist');
       }
     } else {
