@@ -15,15 +15,15 @@ import './manager.dart';
 import './pantry.dart';
 import './todo.dart';
 
-
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(HomeGenie());
 
-
+  fetchData('a');
 }
 
 class HomeGenie extends StatelessWidget {
@@ -54,6 +54,9 @@ class HG_AppState extends State<HG_App> {
   String _httpResponse = '';
   String _fullStatement = ''; // Accumulate full statement
   bool _isListening = false; // Keep track of listening state
+  bool _showFullStatement = false;
+  double _containerHeight = 0.0;
+  double _containerOpacity = 0.0;
 
   @override
   void initState() {
@@ -75,11 +78,14 @@ class HG_AppState extends State<HG_App> {
       });
     } else {
       await _speechToText.stop();
-      await sendGetRequest(_fullStatement.trim()); // Send full statement
-      _fullStatement = ''; // Reset the statement after sending
       setState(() {
         _isListening = false;
+        _showFullStatement = true; // Show the full statement container
+        _containerHeight = MediaQuery.of(context).size.height; // Extend container to bottom
+        _containerOpacity = 1.0; // Make container fully visible
       });
+      await sendGetRequest(_fullStatement.trim()); // Send full statement
+      _fullStatement = ''; // Reset the statement after sending
     }
   }
 
@@ -119,171 +125,219 @@ class HG_AppState extends State<HG_App> {
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.ltr, // or TextDirection.rtl if applicable
-      child: Scaffold(
-        backgroundColor: Color(0xFF202020),
-        body: SingleChildScrollView(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.width * 0.01),
-                Padding(
-                  padding:
-                      EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.97,
-                    height: MediaQuery.of(context).size.width * 0.18,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF6FF80),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(
-                            ' Hi User!\n Welcome back',
-                            style: GoogleFonts.openSans(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 20,
+        textDirection: TextDirection.ltr,
+        child: WillPopScope(
+            onWillPop: () async {
+              if (_showFullStatement) {
+                setState(() {
+                  _showFullStatement = false; // Hide the full statement container
+                  _containerHeight = 0.0; // Set container height back to 0
+                  _containerOpacity = 0.0; // Make container fully invisible
+                });
+                return false; // Prevent back navigation
+              }
+              return true; // Allow back navigation
+            },
+            child: Scaffold(
+              backgroundColor: Color(0xFF202020),
+              body: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.width * 0.01),
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: MediaQuery.of(context).padding.top,
+                            ),
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.97,
+                              height: MediaQuery.of(context).size.width * 0.18,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFF6FF80), // Changed here
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text(
+                                      ' Hi User!\n Welcome back',
+                                      style: GoogleFonts.openSans(
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 20,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Icon(Icons.person, size: 45),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.width * 0.01),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.97,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
                               color: Colors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                              child: Text(
+                                _httpResponse, // Display the httpResponse
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.width * 0.01),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.97,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.width * 0.01),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.97,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.width * 0.01),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.97,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: MediaQuery.of(context).size.height * 0.1,
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 500),
+                      height: _containerHeight,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Visibility(
+                        visible: _showFullStatement,
+                        child: AnimatedOpacity(
+                          duration: Duration(milliseconds: 300),
+                          opacity: _containerOpacity,
+                          child: Center(
+                            child: Text(
+                              _fullStatement, // Display the full statement
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Icon(Icons.person, size: 45),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              bottomNavigationBar: NavigationBar(
+                selectedIndex: _currentPageIndex,
+                onDestinationSelected: (int index) {
+                  setState(() {
+                    _currentPageIndex = index;
+                  });
+                  // Handle navigation based on the index if needed
+                  switch (index) {
+                    case 0:
+                    // Navigate to home page
+                      break;
+                    case 1:
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Inventory(),
+                        ),
+                      );
+                      break;
+                    case 2:
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Todo(),
+                        ),
+                      );
+                      break;
+                    case 3:
+                    // Navigate to profile page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingsPage(
+                            toggleListening: _toggleListening,
+                            isListening: _isListening,
                           ),
-                        )
-                      ],
-                    ),
+
+                        ),
+                      );
+                      break;
+                  }
+                },
+                backgroundColor: Color(0xFF202020),
+                indicatorColor: Theme.of(context).primaryColor,
+                destinations: [
+                  NavigationDestination(
+                    icon: Icon(Icons.home),
+                    label: 'Home',
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.width * 0.01),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.97,
-                  height: MediaQuery.of(context).size.width * 0.4,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(20),
+                  NavigationDestination(
+                    icon: Icon(Icons.door_sliding_outlined),
+                    label: 'Pantry',
                   ),
-                  child: Center(
-                    child: Text(
-                      _httpResponse, // Display the httpResponse
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
+                  NavigationDestination(
+                    icon: Icon(Icons.task),
+                    label: 'Tasks',
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.width * 0.01),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.97,
-                  height: MediaQuery.of(context).size.width * 0.4,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(20),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    label: 'Profile',
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.width * 0.01),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.97,
-                  height: MediaQuery.of(context).size.width * 0.4,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                SizedBox(height: MediaQuery.of(context).size.width * 0.01),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.97,
-                  height: MediaQuery.of(context).size.width * 0.4,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ],
+                ],
+              ),
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+              floatingActionButton: FloatingActionButton(
+                onPressed: _toggleListening,
+                child: Icon(_isListening ? Icons.stop : Icons.mic),
+                tooltip: 'Listen',
+                elevation: 0,
+                shape: CircleBorder(),
+              ),
             ),
-          ),
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _currentPageIndex,
-          onDestinationSelected: (int index) {
-            setState(() {
-              _currentPageIndex = index;
-            });
-            // Handle navigation based on the index if needed
-            switch (index) {
-              case 0:
-                // Navigate to home page
-                break;
-              case 1:
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Inventory(
-                    ),
-                  ),
-                );
-                break;
-              case 2:
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Todo(
-                    ),
-                  ),
-                );
-                break;
-              case 3:
-                // Navigate to profile page
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SettingsPage(
-                      toggleListening: _toggleListening,
-                      isListening: _isListening,
-                    ),
-                  ),
-                );
-                break;
-            }
-          },
-          backgroundColor: Color(0xFF202020),
-          indicatorColor: Theme.of(context).primaryColor,
-          destinations: [
-            NavigationDestination(
-              icon: Icon(Icons.home),
-              label: 'Home',
             ),
-            NavigationDestination(
-              icon: Icon(Icons.door_sliding_outlined),
-              label: 'Pantry',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.task),
-              label: 'Tasks',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              label: 'Profile',
-            ),
-          ],
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: FloatingActionButton(
-          onPressed: _toggleListening,
-          child: Icon(_isListening ? Icons.stop : Icons.mic),
-          tooltip: 'Listen',
-          elevation: 0,
-          shape: CircleBorder(),
-        ),
-      ),
-    );
-  }
+        );
+    }
 }

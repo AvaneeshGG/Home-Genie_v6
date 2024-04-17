@@ -81,12 +81,16 @@ class FirebaseTodoList extends StatelessWidget {
     required this.showEditDialog,
   });
 
-  Color _calculateBackgroundColor(String quantity, String weight, String limit) {
+  Color _calculateBackgroundColor(String quantity, String weight, String limit, BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Brightness platformBrightness = MediaQuery.of(context).platformBrightness;
+
     bool isQuantityNA = quantity == 'N/A';
     bool isWeightNA = weight == 'N/A';
 
     if (isQuantityNA && isWeightNA) {
-      return Colors.white;
+      return colorScheme.surface;
     } else {
       int parsedQuantity = isQuantityNA ? 0 : int.tryParse(quantity) ?? 0;
       double parsedWeight = isWeightNA ? 0 : parseWeight(weight);
@@ -95,7 +99,12 @@ class FirebaseTodoList extends StatelessWidget {
       if ((isQuantityNA && parsedWeight < parsedLimit) || (isWeightNA && parsedQuantity < parsedLimit)) {
         return Colors.red[100] ?? Colors.red;
       } else {
-        return Colors.white;
+        // Use system color scheme (light or dark)
+        if (platformBrightness == Brightness.dark) {
+          return colorScheme.surface;
+        } else {
+          return colorScheme.background;
+        }
       }
     }
   }
@@ -141,7 +150,7 @@ class FirebaseTodoList extends StatelessWidget {
                 String quantity = data['quantity'] != null ? data['quantity'].toString() : 'N/A';
 
                 // Determine the background color based on the quantity and the limit
-                Color backgroundColor = _calculateBackgroundColor(quantity, weight, limit);
+                Color backgroundColor = _calculateBackgroundColor(quantity, weight, limit, context);
 
                 return Slidable(
                   actionPane: SlidableDrawerActionPane(),
@@ -510,6 +519,7 @@ class _InventoryState extends State<Inventory> {
     );
   }
 
+
   void _updateItem(String documentId, String title, String quantity, String weight, String limit) async {
     if (documentId.isNotEmpty && title.isNotEmpty) { // Ensure both documentId and title are not empty
       if (selectedCategory != null && globalConnectCode != null) {
@@ -528,8 +538,10 @@ class _InventoryState extends State<Inventory> {
         );
 
         int parsedQuantity = quantity == 'N/A' ? 0 : int.tryParse(quantity) ?? 0;
-        int parsedWeight = weight == 'N/A' ? 0 : int.tryParse(weight) ?? 0;
+        double parsedWeight = weight == 'N/A' ? 0 : toKgs(weight);
         int parsedLimit = int.tryParse(limit) ?? 2;
+
+
 
         // Check if either quantity or weight is less than the limit and not 'N/A'
         if ((parsedQuantity < parsedLimit && quantity != 'N/A') || (parsedWeight < parsedLimit && weight != 'N/A')) {
@@ -557,6 +569,21 @@ class _InventoryState extends State<Inventory> {
       }
     } else {
       print('Error: Document ID or title is empty');
+    }
+  }
+
+
+  double toKgs(String metric) {
+    List<String> splitMetric = metric.split(" ");
+    double value = double.parse(splitMetric[0]);
+    String unit = splitMetric[1].toLowerCase();
+    if (unit == "gms") {
+      return value / 1000;
+    } else if (unit == "kgs") {
+      return value;
+    } else {
+      // Handle invalid unit
+      return 0;
     }
   }
 

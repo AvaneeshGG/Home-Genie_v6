@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
+import'package:home_genie/Inventory.dart';
 
 Future<String?> _getFirebaseCode() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -92,14 +93,57 @@ void fetchData(String response) async {
     }
 
 
-    else if (labels.contains('add') && labels.contains('to-do')) {
-      // Handle 'add' and 'to-do' labels
+    else if (labels.contains('add') && labels.contains('chores')) {
+      String? firebaseCode = await _getFirebaseCode();
+      for (var item in items) {
+        var itemName = item['item'] ?? null; // Move itemName declaration here
+        try {
+          await FirebaseFirestore.instance
+              .collection('sharedCollection')
+              .doc(firebaseCode)
+              .collection('todos') // Subcollection name
+              .add({
+            'title': itemName,
+            'description':''
+          });
+          print('Item added to todos subcollection.');
+        } catch (e) {
+          print('Error adding item to todos subcollection: $e');
+        }
+      }
     }
     else if (labels.contains('fetch')) {
+      // Retrieve the global connect code
+      String? firebaseCode = await _getFirebaseCode();
 
+      if (firebaseCode != null) {
+        for (var item in items) {
+          var itemName = item['item'] ?? null;
+          var category = item['category'] ?? null;
 
-  }
-      // Handle 'fetch' label
+          if (firebaseCode.isNotEmpty && category.isNotEmpty && itemName != null) {
+            // Fetch the item data from Firebase
+            var itemData = await fetchItemData(firebaseCode, category, itemName);
+
+            if (itemData != null) {
+              print('Item Name: $itemName');
+              print('Quantity: ${itemData['quantity']}');
+              print('Weight: ${itemData['weight']}');
+            } else {
+              print('Item $itemName not found in category $category.');
+            }
+          } else {
+            print('Error: firebaseCode, category, or itemName is null or empty.');
+          }
+        }
+      } else {
+        print('Global connect code not found in SharedPreferences.');
+      }
+    }
+
+// Function to fetch item data from Firebase
+
+  // Handle 'fetch' label
     else if (labels.contains('remove') && labels.contains('pantry')) {
       print("Removing");
     // Retrieve the global connect code
@@ -137,7 +181,7 @@ void fetchData(String response) async {
               int existingQuantityInt = int.tryParse(existingQuantity) ?? 0;
               int newQuantityInt = int.tryParse(quantity) ?? 0;
               int totalQuantity = (existingQuantityInt - newQuantityInt);
-                if(totalQuantity<0){
+                if(totalQuantity<=0){
                   await deleteItemFromFirebase(firebaseCode, itemName, category);
                 }
                 else {
@@ -346,7 +390,7 @@ String metricCalc(String metric1, String metric2, String operation) {
       result = value1 + value2;
     } else if (operation == "subtract") {
       result = value1 - value2;
-      if(result<0){
+      if(result<=0){
         return "N/A";
       }
     } else {
@@ -378,6 +422,33 @@ Future<void> deleteItemFromFirebase(String firebaseCode, String itemName, String
   }
 }
 // Additional code goes here...
+
+
+Future<Map<String, dynamic>?> fetchItemData(String firebaseCode, String category, String itemName) async {
+  try {
+    var querySnapshot = await FirebaseFirestore.instance
+        .collection('sharedCollection')
+        .doc(firebaseCode)
+        .collection(category)
+        .where('title', isEqualTo: itemName)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      // Assuming there's only one document for each item in the category
+      var document = querySnapshot.docs.first;
+      return {
+        'quantity': document['quantity'],
+        'weight': document['weight'],
+      };
+    } else {
+      return null; // Item not found
+    }
+  } catch (e) {
+    print('Error fetching item data from Firebase: $e');
+    return null;
+  }
+}
+
 
 
 
