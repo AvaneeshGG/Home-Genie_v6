@@ -14,7 +14,8 @@ Future<String?> _getFirebaseCode() async {
 void fetchData(String response) async {
   if (response != null) {
     Map<String, dynamic> jsonResponse = jsonDecode(
-        '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["add","pantry"]}');
+      response);
+       // '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["add","pantry"]}');
     //print(jsonResponse);
 
     var items = jsonResponse['items'];
@@ -377,3 +378,7 @@ Future<void> deleteItemFromFirebase(String firebaseCode, String itemName, String
   }
 }
 // Additional code goes here...
+
+
+
+
