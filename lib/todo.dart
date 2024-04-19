@@ -310,7 +310,7 @@ class _TodoState extends State<Todo> {
         GestureDetector(
           onTap: onTap,
           child: Container(
-            color: Colors.blue, // Header background color
+            color: Colors.blue[300], // Header background color
             padding: EdgeInsets.all(16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

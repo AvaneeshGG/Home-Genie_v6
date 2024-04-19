@@ -259,86 +259,95 @@ class _InventoryState extends State<Inventory> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Inventory'),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildExpandableSection(
-              title: 'Fruits',
-              content: FirebaseTodoList(
-                firebaseTodo: FirebaseTodo(
-                  category: 'fruits',
-                  globalConnectCode: globalConnectCode ?? '',
-                ),
-                showEditDialog: _showEditDialog,
-              ),
-            ),
-            _buildExpandableSection(
-              title: 'Vegetables',
-              content: FirebaseTodoList(
-                firebaseTodo: FirebaseTodo(
-                  category: 'vegetables',
-                  globalConnectCode: globalConnectCode ?? '',
-                ),
-                showEditDialog: _showEditDialog,
-              ),
-            ),
-            _buildExpandableSection(
-              title: 'Daily Essentials',
-              content: FirebaseTodoList(
-                firebaseTodo: FirebaseTodo(
-                  category: 'daily essentials',
-                  globalConnectCode: globalConnectCode ?? '',
-                ),
-                showEditDialog: _showEditDialog,
-              ),
-            ),
-            _buildExpandableSection(
-              title: 'Medicines',
-              content: FirebaseTodoList(
-                firebaseTodo: FirebaseTodo(
-                  category: 'medicines',
-                  globalConnectCode: globalConnectCode ?? '',
-                ),
-                showEditDialog: _showEditDialog,
-              ),
-            ),
-            _buildExpandableSection(
-              title: 'Pulses',
-              content: FirebaseTodoList(
-                firebaseTodo: FirebaseTodo(
-                  category: 'pulses',
-                  globalConnectCode: globalConnectCode ?? '',
-                ),
-                showEditDialog: _showEditDialog,
-              ),
-            ),
-            Text(
-              'Global Connect Code: ${globalConnectCode ?? "Not Available"}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+    if (globalConnectCode == null) {
+      return Center(
+        child: Text(
+          'No family code',
+          style: TextStyle(fontSize: 24.0),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showAddDialog(context);
-        },
-        label: Text('Add'),
-        icon: Icon(Icons.add),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
+      );
+    } else {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Inventory'),
         ),
-        backgroundColor: Colors.blue,
-        elevation: 2.0,
-        tooltip: 'Add a new item',
-        isExtended: true,
-        splashColor: Colors.blueAccent,
-      ),
-    );
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildExpandableSection(
+                title: 'Fruits',
+                content: FirebaseTodoList(
+                  firebaseTodo: FirebaseTodo(
+                    category: 'fruits',
+                    globalConnectCode: globalConnectCode ?? '',
+                  ),
+                  showEditDialog: _showEditDialog,
+                ),
+              ),
+              _buildExpandableSection(
+                title: 'Vegetables',
+                content: FirebaseTodoList(
+                  firebaseTodo: FirebaseTodo(
+                    category: 'vegetables',
+                    globalConnectCode: globalConnectCode ?? '',
+                  ),
+                  showEditDialog: _showEditDialog,
+                ),
+              ),
+              _buildExpandableSection(
+                title: 'Daily Essentials',
+                content: FirebaseTodoList(
+                  firebaseTodo: FirebaseTodo(
+                    category: 'daily essentials',
+                    globalConnectCode: globalConnectCode ?? '',
+                  ),
+                  showEditDialog: _showEditDialog,
+                ),
+              ),
+              _buildExpandableSection(
+                title: 'Medicines',
+                content: FirebaseTodoList(
+                  firebaseTodo: FirebaseTodo(
+                    category: 'medicines',
+                    globalConnectCode: globalConnectCode ?? '',
+                  ),
+                  showEditDialog: _showEditDialog,
+                ),
+              ),
+              _buildExpandableSection(
+                title: 'Pulses',
+                content: FirebaseTodoList(
+                  firebaseTodo: FirebaseTodo(
+                    category: 'pulses',
+                    globalConnectCode: globalConnectCode ?? '',
+                  ),
+                  showEditDialog: _showEditDialog,
+                ),
+              ),
+              Text(
+                'Global Connect Code: ${globalConnectCode ?? "Not Available"}',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            _showAddDialog(context);
+          },
+          label: Text('Add'),
+          icon: Icon(Icons.add),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          //backgroundColor: Colors.blue,
+          elevation: 2.0,
+          tooltip: 'Add a new item',
+          isExtended: true,
+          splashColor: Colors.blueAccent,
+        ),
+      );
+    }
   }
 
   Widget _buildExpandableSection({

@@ -140,182 +140,267 @@ class HG_AppState extends State<HG_App> {
       textDirection: TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: RefreshIndicator(
-          onRefresh: () async {
-            // Simulate a refresh delay
-            await Future.delayed(Duration(seconds: 1));
-
-            // Once the delay is over, update the UI with new data or perform any necessary operations
-            setState(() {
-              // Update data or perform any necessary operations here
-            });
-          },
-          child: Stack(
-            children: [
-              SlidingUpPanel(
-                controller: _panelController,
-                backdropEnabled: true,
-                minHeight: 0.0, // Set minimum height to 0.0
-                maxHeight: 500.0, // Set maximum height to 0.0
-                panel: Center(
-                  child: Text(_fullStatement),
-                ),
-                body: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(height: MediaQuery.of(context).padding.top),
-
-                      Container(
-                        color: Colors.red, // Set color here
-                        height: 100,
-                        width: MediaQuery.of(context).size.width, // Take full width
-                        child: Center(
-                          child: Text(
-                            _httpResponse, // Display the httpResponse
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+        body: Stack(
+          children: [
+            // Place the RefreshIndicator above the SlidingUpPanel
+            RefreshIndicator(
+              onRefresh: () async {
+                setState(() {});
+              },
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Your content here
+                    SlidingUpPanel(
+                      controller: _panelController,
+                      backdropEnabled: true,
+                      minHeight: 0.0, // Set minimum height to 0.0
+                      maxHeight: 500.0, // Set maximum height to 0.0
+                      panel: Center(
+                        child: Text(_fullStatement),
                       ),
-                      SizedBox(height: 20), // Add some spacing between containers
-                      Container(
-                        color: Colors.green, // Set color here
-                        height: 300,
-                        width: MediaQuery.of(context).size.width, // Take full width
+                      body: SingleChildScrollView(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                              child: Text(
-                                'To Do',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                            SizedBox(height: MediaQuery.of(context).padding.top),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: Colors.black, // Set border color here
+                                  width: 2, // Set border width here
+                                ),
+                              ),
+                              //color: Colors.red, // Set color here
+                              height: 100,
+                              width: MediaQuery.of(context).size.width, // Take full width
+                              child: Center(
+                                child: Text(
+                                  'Hello Welcone back User!', // Display the httpResponse
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
                                 ),
                               ),
                             ),
-                            Expanded(
-                              child: StreamBuilder<QuerySnapshot>(
-
-                                stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
-                                    ? FirebaseFirestore.instance
-                                    .collection('sharedCollection')
-                                    .doc(globalConnectCode)
-                                    .collection('todos')
-                                    .orderBy('timestamp', descending: true)
-                                    .limit(3)
-                                    .snapshots()
-                                    : Stream.empty(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return Center(
-                                      child: CircularProgressIndicator(), // Show loading indicator while fetching data
-                                    );
-                                  }
-                                  if (snapshot.hasError) {
-                                    return Center(
-                                      child: Text('Error: ${snapshot.error}'), // Show error if encountered
-                                    );
-                                  }
-                                  if (snapshot.hasData) {
-                                    final documents = snapshot.data!.docs;
-                                    if (documents.isEmpty) {
-                                      return Center(
-                                        child: Text('No data available'), // Show message if no documents found
-                                      );
-                                    }
-                                    return ListView.builder(
-                                      itemCount: documents.length,
-                                      itemBuilder: (context, index) {
-                                        // Build UI for each document
-                                        final todo = documents[index].data() as Map<String, dynamic>;
-                                        return ListTile(
-                                          title: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '• ${todo['title']}', // Assuming 'title' is a field in your document
-                                                style: TextStyle(
-                                                  color: Colors.white, // Set text color to white
-                                                  fontSize: 16, // Example font size, adjust as needed
-                                                  fontWeight: FontWeight.bold, // Example font weight, adjust as needed
-                                                ),
-                                              ),
-                                              SizedBox(height: 1), // Add spacing between bullet point and description
-                                              Text(
-                                                todo['description'], // Assuming 'description' is a field in your document
-                                                style: TextStyle(
-                                                  color: Colors.white70, // Set text color to a lighter shade of white
-                                                  fontSize: 14, // Example font size, adjust as needed
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 20), // Add padding to ListTile content
-                                          onTap: () {
-                                            // Add onTap functionality if needed
-                                          },
-                                        );
-                                      },
-                                    );
-                                  }
-                                  return SizedBox.shrink(); // If none of the above conditions are met, return an empty SizedBox
-                                },
+                            SizedBox(height: 20), // Add some spacing between containers
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue[200],
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: Colors.black, // Set border color here
+                                  width: 2, // Set border width here
+                                ),
+                              ),
+                              child: Container(
+                                //color: Colors.green[100], // Set color here
+                                height: 300,
+                                width: MediaQuery.of(context).size.width, // Take full width
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 20, top: 10, bottom: 5), // Adjust vertical padding
+                                      child: Text(
+                                        'To Do',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: StreamBuilder<QuerySnapshot>(
+                                        stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
+                                            ? FirebaseFirestore.instance
+                                            .collection('sharedCollection')
+                                            .doc(globalConnectCode)
+                                            .collection('todos')
+                                            .orderBy('timestamp', descending: true)
+                                            .limit(3)
+                                            .snapshots()
+                                            : Stream.empty(),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return Center(
+                                              child: CircularProgressIndicator(), // Show loading indicator while fetching data
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return Center(
+                                              child: Text('Error: ${snapshot.error}'), // Show error if encountered
+                                            );
+                                          }
+                                          if (snapshot.hasData) {
+                                            final documents = snapshot.data!.docs;
+                                            if (documents.isEmpty) {
+                                              return Center(
+                                                child: Text('No pending task'), // Show message if no documents found
+                                              );
+                                            }
+                                            return ListView.builder(
+                                              itemCount: documents.length,
+                                              itemBuilder: (context, index) {
+                                                // Build UI for each document
+                                                final todo = documents[index].data() as Map<String, dynamic>;
+                                                return ListTile(
+                                                  title: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        '• ${todo['title']}', // Assuming 'title' is a field in your document
+                                                        style: TextStyle(
+                                                          color: Colors.black, // Set text color to white
+                                                          fontSize: 16, // Example font size, adjust as needed
+                                                          fontWeight: FontWeight.bold, // Example font weight, adjust as needed
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 1), // Add spacing between bullet point and description
+                                                      Text(
+                                                        todo['description'], // Assuming 'description' is a field in your document
+                                                        style: TextStyle(
+                                                          color: Colors.white70, // Set text color to a lighter shade of white
+                                                          fontSize: 14, // Example font size, adjust as needed
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 20), // Add padding to ListTile content
+                                                  onTap: () {
+                                                    // Add onTap functionality if needed
+                                                  },
+                                                );
+                                              },
+                                            );
+                                          }
+                                          return SizedBox.shrink(); // If none of the above conditions are met, return an empty SizedBox
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
+
+
+                            SizedBox(height: 20), // Add some spacing between containers
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.green[200],
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: Colors.black, // Set border color here
+                                  width: 2, // Set border width here
+                                ),
+                              ),
+                             // color: Colors.blue, // Set color here
+                              height: 300,
+                              width: MediaQuery.of(context).size.width, // Take full width
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 20, top: 10, bottom: 50), // Adjust vertical padding
+                                    child: Text(
+                                      'You are running low on',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  StreamBuilder<QuerySnapshot>(
+                                    stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
+                                        ? FirebaseFirestore.instance
+                                        .collection('sharedCollection')
+                                        .doc(globalConnectCode)
+                                        .collection('refill')
+                                        .snapshots()
+                                        : Stream.empty(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return Center(
+                                          child: CircularProgressIndicator(), // Show loading indicator while fetching data
+                                        );
+                                      }
+                                      if (snapshot.hasError) {
+                                        return Center(
+                                          child: Text('Error: ${snapshot.error}'), // Show error if encountered
+                                        );
+                                      }
+                                      if (snapshot.hasData) {
+                                        final documents = snapshot.data!.docs;
+                                        if (documents.isEmpty) {
+                                          return Center(
+                                            child: Text('Nothing'), // Show message if no documents found
+                                          );
+                                        }
+                                        return ListView.builder(
+                                          itemCount: documents.length,
+                                          itemBuilder: (context, index) {
+                                            // Build UI for each document
+                                            final document = documents[index].data() as Map<String, dynamic>;
+                                            final title = document['title'];
+                                            return ListTile(
+                                              title: Text(title), // Display the title field
+                                              // Add onTap functionality if needed
+                                            );
+                                          },
+                                        );
+                                      }
+                                      return SizedBox.shrink(); // If none of the above conditions are met, return an empty SizedBox
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+
                           ],
                         ),
                       ),
-
-                      SizedBox(height: 20), // Add some spacing between containers
-                      Container(
-                        color: Colors.blue, // Set color here
-                        height: 100,
-                        width: MediaQuery.of(context).size.width, // Take full width
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                left: 16,
-                right: 16,
-                child: Visibility(
-                  visible: _isListening,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      _panelController.open();
-                      _toggleListening();
-                      // Open the SlidingUpPanel
-                    },
-                    child: Icon(Icons.stop),
-                    tooltip: 'Stop',
-                    elevation: 0,
-                    shape: CircleBorder(),
-                  ),
-                  replacement: FloatingActionButton(
-                    onPressed: () {
-                      _panelController.open();
-                      _toggleListening();
-                      // Open the SlidingUpPanel
-                    },
-                    child: Icon(Icons.mic),
-                    tooltip: 'Listen',
-                    elevation: 0,
-                    shape: CircleBorder(),
-                  ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 16,
+              right: 16,
+              child: Visibility(
+                visible: _isListening,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    _panelController.open();
+                    _toggleListening();
+                    // Open the SlidingUpPanel
+                  },
+                  child: Icon(Icons.stop),
+                  tooltip: 'Stop',
+                  elevation: 0,
+                  shape: CircleBorder(),
+                ),
+                replacement: FloatingActionButton(
+                  onPressed: () {
+                    _panelController.open();
+                    _toggleListening();
+                    // Open the SlidingUpPanel
+                  },
+                  child: Icon(Icons.mic),
+                  tooltip: 'Listen',
+                  elevation: 0,
+                  shape: CircleBorder(),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _currentPageIndex,
