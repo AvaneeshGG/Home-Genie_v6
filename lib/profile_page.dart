@@ -4,6 +4,16 @@ import 'package:home_genie/Connect.dart';
 import './main.dart';
 import './pantry.dart';
 import './Connect.dart';
+import 'Inventory.dart';
+import 'todo.dart';
+
+class User {
+  final String id;
+  final String name;
+
+  User({required this.id, required this.name});
+}
+
 
 class SettingsPage extends StatefulWidget {
   final VoidCallback toggleListening;
@@ -37,7 +47,6 @@ class _SettingsPageState extends State<SettingsPage> {
            // Assuming ProfileScreen is the main content
           Container(
             height: 700,
-            color: Colors.blue,
             child: Center(
               child: ProfileScreen(),
 
@@ -96,18 +105,22 @@ class _SettingsPageState extends State<SettingsPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Pantry(
-                    toggleListening: widget.toggleListening,
-                    isListening: widget.isListening,
-                  ),
+                  builder: (context) => Inventory(),
                 ),
               );
               break;
             case 2:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Todo(),
+                ),
+              );
               break;
           }
         },
-        indicatorColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.white,
+        //indicatorColor: Theme.of(context).primaryColor,
         selectedIndex: _currentPageIndex, // Use the current page index
         destinations: const <Widget>[
           NavigationDestination(
@@ -120,23 +133,14 @@ class _SettingsPageState extends State<SettingsPage> {
             label: 'Pantry',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            label: 'Notifications',
+            icon: Icon(Icons.task),
+            label: 'Tasks',
           ),
           NavigationDestination(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: widget.toggleListening,
-        child: Icon(widget.isListening ? Icons.stop : Icons.mic),
-        // Use widget.isListening
-        tooltip: 'Listen',
-        elevation: 0,
-        shape: CircleBorder(),
       ),
     );
   }

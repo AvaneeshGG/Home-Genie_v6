@@ -361,6 +361,7 @@ class FirebaseTodo {
     await _todosCollection.add({
       'title': title,
       'description': description,
+      'timestamp':FieldValue.serverTimestamp(),
     });
   }
 
@@ -372,6 +373,7 @@ class FirebaseTodo {
     await _todosCollection.doc(docId).update({
       'title': title,
       'description': description,
+      'timestamp':FieldValue.serverTimestamp(),
     });
   }
 
