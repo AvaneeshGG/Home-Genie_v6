@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:home_genie/Connect.dart';
 import './main.dart';
-import './pantry.dart';
 import './Connect.dart';
 import 'Inventory.dart';
 import 'todo.dart';
@@ -16,12 +15,8 @@ class User {
 
 
 class SettingsPage extends StatefulWidget {
-  final VoidCallback toggleListening;
-  final bool isListening;
 
-  const SettingsPage(
-      {Key? key, required this.toggleListening, required this.isListening})
-      : super(key: key);
+  SettingsPage({Key? key}) : super(key: key);
 
   @override
   _SettingsPageState createState() => _SettingsPageState();
@@ -44,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: ListView(
         children: [
-           // Assuming ProfileScreen is the main content
+          // Assuming ProfileScreen is the main content
           Container(
             height: 700,
             child: Center(
@@ -83,7 +78,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           ),
-
         ],
       ),
 
@@ -119,8 +113,6 @@ class _SettingsPageState extends State<SettingsPage> {
               break;
           }
         },
-        backgroundColor: Colors.white,
-        //indicatorColor: Theme.of(context).primaryColor,
         selectedIndex: _currentPageIndex, // Use the current page index
         destinations: const <Widget>[
           NavigationDestination(

@@ -97,17 +97,15 @@ class FirebaseTodoList extends StatelessWidget {
       int parsedLimit = int.tryParse(limit) ?? 2;
 
       if ((isQuantityNA && parsedWeight < parsedLimit) || (isWeightNA && parsedQuantity < parsedLimit)) {
-        return Colors.red;
+        // Use dark red if system theme is dark, else use lighter shade of red
+        return platformBrightness == Brightness.dark ? Colors.red[900]! : Colors.red[100]!;
       } else {
         // Use system color scheme (light or dark)
-        if (platformBrightness == Brightness.dark) {
-          return colorScheme.surface;
-        } else {
-          return colorScheme.background;
-        }
+        return platformBrightness == Brightness.dark ? colorScheme.surface : colorScheme.background;
       }
     }
   }
+
 
   double parseWeight(String weightString) {
     // Split the weight string into its numerical value and unit
@@ -260,11 +258,13 @@ class _InventoryState extends State<Inventory> {
   @override
   Widget build(BuildContext context) {
     if (globalConnectCode == null) {
-      return Center(
-        child: Text(
-          'No family code',
-          style: TextStyle(fontSize: 24.0),
-        ),
+      return Scaffold(
+          body: Center(
+            child: Text(
+              'No family code',
+              style: TextStyle(fontSize: 24.0),
+            ),
+          )
       );
     } else {
       return Scaffold(

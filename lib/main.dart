@@ -33,13 +33,22 @@ class HomeGenie extends StatelessWidget {
     final bool isDarkMode = brightness == Brightness.dark;
 
     return MaterialApp(
-        themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
-        home: LoginPage(),
-        );
-    }
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData.light().copyWith(
+        textTheme: GoogleFonts.redHatDisplayTextTheme().apply(
+          bodyColor: Colors.black, // Set text color for light theme
+        ),
+      ),
+      darkTheme: ThemeData.dark().copyWith(
+        textTheme: GoogleFonts.redHatDisplayTextTheme().apply(
+          bodyColor: Colors.white, // Set text color for dark theme
+        ),
+      ),
+      home: LoginPage(),
+    );
 
+
+  }
 }
 
 class HG_App extends StatefulWidget {
@@ -50,6 +59,7 @@ class HG_App extends StatefulWidget {
 }
 
 class HG_AppState extends State<HG_App> {
+
   late SpeechToText _speechToText;
   bool _speechEnabled = false;
   String _lastWords = '';
@@ -57,11 +67,10 @@ class HG_AppState extends State<HG_App> {
   String _fullStatement = ''; // Accumulate full statement
   bool _isListening = false; // Keep track of listening state
   bool _showFullStatement = false;
-  double _containerHeight = 0.0;
-  double _containerOpacity = 0.0;
   late final PanelController _panelController = PanelController();
   String? globalConnectCode;
-  String? data='';
+  String? data = '';
+  bool _isPanelOpen = false;
 
   @override
   void initState() {
@@ -87,9 +96,9 @@ class HG_AppState extends State<HG_App> {
       setState(() {
         _isListening = false;
         _showFullStatement = true; // Show the full statement container
-        _containerHeight = MediaQuery.of(context).size.height; // Extend container to bottom
+        _containerHeight =
+            MediaQuery.of(context).size.height; // Extend container to bottom
         _containerOpacity = 1.0; // Make container fully visible
-
       });
       await sendGetRequest(_fullStatement.trim()); // Send full statement
       _fullStatement = '';
@@ -111,19 +120,25 @@ class HG_AppState extends State<HG_App> {
     }
   }
 
+  void _togglePanel(bool isPanelOpen) {
+    setState(() {
+      _isPanelOpen = isPanelOpen; // Update the panel state
+    });
+  }
+
   Future<Widget> Data() async {
-    data= (await fetchData(_httpResponse)) as String;
+    data = (await fetchData(_httpResponse)) as String;
     return Text(
-        data != null && data!.isNotEmpty
-            ? data!
-            : 'Error: data is null or empty.',
-        style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-            ),
-        );
-    }
+      data != null && data!.isNotEmpty
+          ? data!
+          : 'Error: data is null or empty.',
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.black,
+      ),
+    );
+  }
 
   Future<void> sendGetRequest(String statement) async {
     var url = Uri.parse('http://45.248.65.97:5000/api?text=$statement');
@@ -135,10 +150,7 @@ class HG_AppState extends State<HG_App> {
       print('Response body: ${response.body}');
       setState(() {
         _httpResponse = response.body;
-
       });
-
-
     } else {
       print('Request failed with status: ${response.statusCode}');
     }
@@ -155,8 +167,22 @@ class HG_AppState extends State<HG_App> {
     });
   }
 
+  double _containerHeight = 0.0;
+  double _containerOpacity = 0.0;
+
   @override
   Widget build(BuildContext context) {
+    BorderRadiusGeometry radius = BorderRadius.only(
+      topLeft: Radius.circular(24.0),
+      topRight: Radius.circular(24.0),
+    );
+
+
+    final fontSize = MediaQuery.of(context).size.width*0.04;
+    final h1 = MediaQuery.of(context).size.width*0.06;
+    final h2 = MediaQuery.of(context).size.width*0.04;
+    final h3 = MediaQuery.of(context).size.width*0.04;
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
@@ -174,58 +200,128 @@ class HG_AppState extends State<HG_App> {
                     SlidingUpPanel(
                       controller: _panelController,
                       backdropEnabled: true,
-                      minHeight: 0.0, // Set minimum height to 0.0
-                      maxHeight: 500.0, // Set maximum height to 0.0
-                      panel: Center(
-                        child: Text(_fullStatement,
+                      minHeight: 0.0,
+                      // Set minimum height to 0.0
+                      maxHeight: MediaQuery.of(context).size.height * 0.7,
+                      // Set maximum height to 70% of screen height
+                      panel: SingleChildScrollView(
+                        child: Container(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.arrow_drop_up,
+                                color: Colors.black, // Set icon color to black
+                              ), // Add the arrow icon here
+                              SizedBox(height: 8), // Add some space between the icon and the container
+                              Text(
+                                _fullStatement,
+                                style: TextStyle(color: Colors.black), // Set text color to black
+                              ), // Add the _fullStatement text here
+                              SizedBox(height: 8), // Add some space between the text and the container
+                              Container(
+                                width: double.infinity, // Make the container width match the parent width
+                                height: MediaQuery.of(context).size.height * 0.45, // Set container height to 30% of screen height
+                                padding: EdgeInsets.all(8), // Add padding to the container
+                                color: Colors.grey, // Set container background color
+                                child: SingleChildScrollView(
+                                  physics: AlwaysScrollableScrollPhysics(), // Make the container always scrollable
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 8), // Add some space between the texts
+                                      FutureBuilder<Widget>(
+                                        future: Data(),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return CircularProgressIndicator();
+                                          } else if (snapshot.hasError) {
+                                            return Text('Error: ${snapshot.error}');
+                                          } else {
+                                            return snapshot.data ?? Container();
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      borderRadius: radius,
+
                       body: SingleChildScrollView(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(height: MediaQuery.of(context).padding.top),
+                            SizedBox(
+                                height: MediaQuery.of(context).padding.top),
+                            // Use MediaQuery to get top padding
                             Container(
                               decoration: BoxDecoration(
                                 color: Color(0xFFF6FF80),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: Colors.black, // Set border color here
-                                  width: 2, // Set border width here
-                                ),
-                              ),
-                              //color: Colors.red, // Set color here
-                              height: 100,
-                              width: MediaQuery.of(context).size.width, // Take full width
-                              child: Center(
-                                  child: FutureBuilder<Widget>(
-                                    future: Data(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return CircularProgressIndicator();
-                                      } else if (snapshot.hasError) {
-                                        return Text('Error: ${snapshot.error}');
-                                      } else {
-                                        return snapshot.data ?? Container();
-                                      }
-                                    },
+                                borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width *
+                                        0.05), // Make borders round
+
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 3),
                                   ),
+                                ],
+                              ),
+                              height: MediaQuery.of(context).size.height * 0.1,
+                              // Set container height to 10% of screen height
+                              width: MediaQuery.of(context).size.width,
+                              // Take full width
+                              child: Padding(
+                                padding: const EdgeInsets.all(15.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Hi User!\nWelcone back',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: fontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                      size: 48,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            SizedBox(height: 5), // Add some spacing between containers
+                            SizedBox(
+                                height:
+                                MediaQuery.of(context).size.height * 0.01),
+                            // Add some spacing between containers
                             Container(
-                              width: MediaQuery.of(context).size.width * 0.98, // Set container width to 98% of screen width
-                                decoration: BoxDecoration(
-                                    color: Color(0xFFF6FF80), // Set color based on theme
-                                    borderRadius: BorderRadius.circular(15), // Make borders round
-                                    boxShadow: [
-                                BoxShadow(
-                                color: Colors.black.withOpacity(0.2), // Set shadow color and opacity
-                                spreadRadius: 2, // Set spread radius
-                                blurRadius: 5, // Set blur radius
-                                offset: Offset(0, 3), // Set shadow offset
-                                ),
+                              width: MediaQuery.of(context).size.width * 0.98,
+                              // Set container width to 98% of screen width
+                              decoration: BoxDecoration(
+                                color: Color(0xFFF6FF80),
+                                // Set color based on theme
+                                borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.05),
+                                // Make borders round
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 3),
+                                  ),
                                 ],
                               ),
                               child: Padding(
@@ -236,79 +332,102 @@ class HG_AppState extends State<HG_App> {
                                     Row(
                                       children: [
                                         Icon(
-                                          Icons.task, // Assuming you have an icon named 'characters'
+                                          Icons.task,
+                                          // Assuming you have an icon named 'characters'
                                           color: Colors.black,
-                                          size: 20, // Adjust size as needed
+                                          size: h1, // Adjust size as needed
                                         ),
-                                        SizedBox(width: 5), // Add some space between the icon and text
+                                        SizedBox(
+                                            width: MediaQuery.of(context)
+                                                .size
+                                                .width *
+                                                0.02),
+                                        // Add some space between the icon and text
                                         Text(
                                           'Current Task',
                                           style: TextStyle(
                                             color: Colors.black,
-                                            fontSize: 20,
+                                            fontSize: h1,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ],
                                     ),
-
-                                    SizedBox(height: 10),
+                                    SizedBox(
+                                        height:
+                                        MediaQuery.of(context).size.height *
+                                            0.01),
                                     StreamBuilder<QuerySnapshot>(
-                                      stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
+                                      stream: globalConnectCode != null &&
+                                          globalConnectCode!.isNotEmpty
                                           ? FirebaseFirestore.instance
                                           .collection('sharedCollection')
                                           .doc(globalConnectCode)
                                           .collection('todos')
-                                          .orderBy('timestamp', descending: true)
+                                          .orderBy('timestamp',
+                                          descending: true)
                                           .limit(3)
                                           .snapshots()
                                           : Stream.empty(),
                                       builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return CircularProgressIndicator(); // Show loading indicator while fetching data
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return CircularProgressIndicator();
                                         }
                                         if (snapshot.hasError) {
-                                          return Text('Error: ${snapshot.error}'); // Show error if encountered
+                                          return Text(
+                                              'Error: ${snapshot.error}');
                                         }
                                         if (snapshot.hasData) {
                                           final documents = snapshot.data!.docs;
-                                          int numberOfTodos = documents.length; // Count the number of documents in todos
+                                          int numberOfTodos = documents
+                                              .length; // Count the number of documents in todos
                                           if (documents.isEmpty) {
                                             return Text('No pending task',
-                                              style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.bold,
-                                            ),); // Show message if no documents found
-                                          }
-                                          return Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text('You have $numberOfTodos\ntasks for today',
                                                 style: TextStyle(
-                                                  fontSize: 26,
+                                                  fontSize: 14,
                                                   color: Colors.black,
                                                   fontWeight: FontWeight.bold,
-                                                ),
-                                              ), // Display the count
-                                              SizedBox(height: 10),
+                                                ));
+                                          }
+                                          return Column(
+                                            crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                  'You have $numberOfTodos\ntasks for today',
+                                                  style: TextStyle(
+                                                    fontSize: 26,
+                                                    color: Colors.black,
+                                                    fontWeight: FontWeight.bold,
+                                                  )),
+                                              SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                      0.01),
                                               ...documents.map((doc) {
-                                                final todo = doc.data() as Map<String, dynamic>;
+                                                final todo = doc.data()
+                                                as Map<String, dynamic>;
                                                 return ListTile(
                                                   title: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                    CrossAxisAlignment
+                                                        .start,
                                                     children: [
                                                       Text(
-                                                        ' ${todo['title']}', // Assuming 'title' is a field in your document
+                                                        ' ${todo['title']}',
                                                         style: TextStyle(
-                                                          color: Colors.black, // Set text color to white
-                                                          fontSize: 16, // Example font size, adjust as needed
-                                                          fontWeight: FontWeight.w400, // Example font weight, adjust as needed
+                                                          color: Colors.black,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                          FontWeight.w400,
                                                         ),
                                                       ),
                                                     ],
                                                   ),
-                                                  contentPadding: EdgeInsets.zero, // Remove ListTile content padding
+                                                  contentPadding:
+                                                  EdgeInsets.zero,
                                                   onTap: () {
                                                     // Add onTap functionality if needed
                                                   },
@@ -317,55 +436,59 @@ class HG_AppState extends State<HG_App> {
                                             ],
                                           );
                                         }
-                                        return SizedBox.shrink(); // If none of the above conditions are met, return an empty SizedBox
+                                        return SizedBox.shrink();
                                       },
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-
-
-
-
-                            SizedBox(height: 5), // Add some spacing between containers
+                            SizedBox(
+                                height:
+                                MediaQuery.of(context).size.height * 0.01),
+                            // Add some spacing between containers
                             Container(
                               decoration: BoxDecoration(
-                                color: Color(0xFFE8EAF6), // Set color based on theme
-                                borderRadius: BorderRadius.circular(15), // Make borders round
+                                color: Color(0xFFE8EAF6),
+                                // Set color based on theme
+                                borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.05),
+                                // Make borders round
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2), // Set shadow color and opacity
-                                    spreadRadius: 2, // Set spread radius
-                                    blurRadius: 5, // Set blur radius
-                                    offset: Offset(0, 3), // Set shadow offset
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 3),
                                   ),
                                 ],
                               ),
-                              width: MediaQuery.of(context).size.width * 0.98, // Set container width to 98% of screen width
+                              width: MediaQuery.of(context).size.width * 0.98,
+                              // Set container width to 98% of screen width
                               child: Padding(
                                 padding: const EdgeInsets.all(10.0),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.only(left: 0, top: 5, bottom: 20), // Adjust vertical padding
+                                      padding: const EdgeInsets.only(
+                                          left: 0, top: 5, bottom: 20),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                         children: [
-
                                           Text(
                                             'You are',
                                             style: TextStyle(
-                                              fontSize: 22,
+                                              fontSize: h1,
                                               color: Colors.black,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           Text(
-                                            'running low on', // Add your additional text here
+                                            'running low on',
+                                            // Add your additional text here
                                             style: TextStyle(
-
                                               fontSize: 28,
                                               color: Colors.black,
                                               fontWeight: FontWeight.bold,
@@ -374,9 +497,9 @@ class HG_AppState extends State<HG_App> {
                                         ],
                                       ),
                                     ),
-
                                     StreamBuilder<QuerySnapshot>(
-                                      stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
+                                      stream: globalConnectCode != null &&
+                                          globalConnectCode!.isNotEmpty
                                           ? FirebaseFirestore.instance
                                           .collection('sharedCollection')
                                           .doc(globalConnectCode)
@@ -384,51 +507,62 @@ class HG_AppState extends State<HG_App> {
                                           .snapshots()
                                           : Stream.empty(),
                                       builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
                                           return Center(
-                                            child: CircularProgressIndicator(), // Show loading indicator while fetching data
+                                            child: CircularProgressIndicator(),
                                           );
                                         }
                                         if (snapshot.hasError) {
                                           return Center(
-                                            child: Text('Error: ${snapshot.error}'), // Show error if encountered
+                                            child: Text(
+                                                'Error: ${snapshot.error}'),
                                           );
                                         }
                                         if (snapshot.hasData) {
                                           final documents = snapshot.data!.docs;
                                           if (documents.isEmpty) {
                                             return Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children:[
-                                                Text('Nothing',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ] // Show message if no documents found
-                                            );
+                                                crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Nothing',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                        FontWeight.bold,
+                                                      ))
+                                                  // Show message if no documents found
+                                                ]);
                                           }
                                           return Column(
+                                            crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                             children: documents.map((doc) {
-                                              final document = doc.data() as Map<String, dynamic>;
+                                              final document = doc.data()
+                                              as Map<String, dynamic>;
                                               final title = document['title'];
                                               return ListTile(
-                                                title: Text(title), // Display the title field
+                                                title: Text(title,
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      color: Colors.black,
+                                                      fontWeight:
+                                                      FontWeight.bold,
+                                                    )), // Display the title field
                                                 // Add onTap functionality if needed
                                               );
                                             }).toList(),
                                           );
                                         }
-                                        return SizedBox.shrink(); // If none of the above conditions are met, return an empty SizedBox
+                                        return SizedBox.shrink();
                                       },
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-
                           ],
                         ),
                       ),
@@ -501,10 +635,7 @@ class HG_AppState extends State<HG_App> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SettingsPage(
-                      toggleListening: _toggleListening,
-                      isListening: _isListening,
-                    ),
+                    builder: (context) => SettingsPage(),
                   ),
                 );
                 break;

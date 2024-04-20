@@ -129,7 +129,6 @@ class _TodoState extends State<Todo> {
                     padding: EdgeInsets.all(8), // Add padding
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10), // Curve the edges
-                      color: Colors.grey[200], // Background color
                     ),
                     child: CupertinoSegmentedControl<int>(
                       children: {
@@ -255,7 +254,7 @@ class _TodoState extends State<Todo> {
         child: Column(
           children: [
             _buildSection(
-              title: 'To-do List (Shared Preferences)',
+              title: 'To-do List (Local)',
               content: TodoList(
                 todoItems: _todoItems,
                 removeItem: _removeItem,
@@ -269,7 +268,7 @@ class _TodoState extends State<Todo> {
               },
             ),
             _buildSection(
-              title: 'Chores List (Firebase)',
+              title: 'Chores List (Cloud)',
               content: FirebaseTodoList(firebaseTodo: firebaseTodo),
               isExpanded: _isExpanded2,
               onTap: () {
@@ -310,20 +309,18 @@ class _TodoState extends State<Todo> {
         GestureDetector(
           onTap: onTap,
           child: Container(
-            color: Colors.blue[300], // Header background color
             padding: EdgeInsets.all(16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  style: TextStyle(fontSize: 18),
                 ),
                 Icon(
                   isExpanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  color: Colors.white,
                 ),
               ],
             ),
@@ -334,7 +331,6 @@ class _TodoState extends State<Todo> {
           child: AnimatedContainer(
             duration: Duration(milliseconds: 300),
             padding: EdgeInsets.all(16),
-            color: Colors.grey[200], // Content background color
             child: content,
           ),
         ),
