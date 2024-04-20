@@ -97,7 +97,7 @@ class FirebaseTodoList extends StatelessWidget {
       int parsedLimit = int.tryParse(limit) ?? 2;
 
       if ((isQuantityNA && parsedWeight < parsedLimit) || (isWeightNA && parsedQuantity < parsedLimit)) {
-        return Colors.red[100] ?? Colors.red;
+        return Colors.red;
       } else {
         // Use system color scheme (light or dark)
         if (platformBrightness == Brightness.dark) {
