@@ -247,10 +247,64 @@ Future<String?> fetchData(String response) async {
   // '{"items":[{"category":"fruits","item":"banana","metric_weight":"3 kgs"}],"labels":["add","pantry"]}');
   //print(jsonResponse);
   var items = jsonResponse['items'];
+  var labels = jsonResponse['labels'];
+
+  if (labels.contains('fetch')) {
+
+  if(items.isEmpty){
+  print('Is running');
+  var querySnapshot = await FirebaseFirestore.instance
+      .collection('sharedCollection') // Collection
+      .doc(globalConnectCode) // Document
+      .collection(labels[1]) // Sub-collection
+      .get();
+
+  String titlesString = '';
+
+  querySnapshot.docs.forEach((doc) {
+  var title = doc
+      .data()['title']; // Access the "title" field from the document data
+  if (title != null) {
+  titlesString +=
+  title.toString() + '\n'; // Concatenate title with newline character
+  }
+  });
+
+  print(titlesString);
+  return titlesString;
+  }
+  else {
+  print("else");
+  var response;
+  for (var item in items) {
+  var itemName = item['item'] ?? null;
+  var category = item['category'] ?? null;
+
+  if (category.isNotEmpty) {
+  var itemData = await fetchItemData(globalConnectCode, category, itemName);
+  if (itemData != null) {
+  response = response + '''\nItem Name: $itemName
+              Quantity: ${itemData['quantity']}
+              Weight: ${itemData['weight']}''';
+  }
+  else {
+  print('Item $itemName not found in category $category.');
+  return 'Item $itemName not found in category $category.';
+  }
+  }
+  else {
+  print('category is null or empty.');
+  return 'category is null or empty.';
+  }
+  }
+  print('no');
+  // return response;
+  }
+  }
+
   if (items.isEmpty) {
     return 'Didn\'t hear that. Try again.' /*phrases to try'*/;
   }
-  var labels = jsonResponse['labels'];
   if (labels.contains('add') && labels.contains('pantry')) {
     // Retrieve the global connect code
     for (var item in items) {
@@ -274,23 +328,34 @@ Future<String?> fetchData(String response) async {
         if (exists) {
           print('$itemName in category $category already exists.');
           // Fetch the quantity and metric weight from Firebase
-          String? existingQuantity = await getFieldFromFirebase(globalConnectCode, itemName, category, 'quantity');
-          String? existingMetricWeight = await getFieldFromFirebase(globalConnectCode, itemName, category, 'weight');
+          String? existingQuantity = await getFieldFromFirebase(
+              globalConnectCode, itemName, category, 'quantity');
+          String? existingMetricWeight = await getFieldFromFirebase(
+              globalConnectCode, itemName, category, 'weight');
 
-          if (existingQuantity != null && existingQuantity != 'N/A' && quantity != null) {
+          if (existingQuantity != null && existingQuantity != 'N/A' &&
+              quantity != null) {
             // Convert existing quantity to an integer, add new quantity, and save as a string to Firebase
             int existingQuantityInt = int.tryParse(existingQuantity) ?? 0;
             int newQuantityInt = int.tryParse(quantity) ?? 0;
             int totalQuantity = existingQuantityInt + newQuantityInt;
-            await updateFieldInFirebase(globalConnectCode, itemName, category, totalQuantity.toString(),'quantity');
-            print('$itemName has been added with quantity $totalQuantity successfully');
+            await updateFieldInFirebase(
+                globalConnectCode, itemName, category, totalQuantity.toString(),
+                'quantity');
+            print(
+                '$itemName has been added with quantity $totalQuantity successfully');
             return '$existingMetricWeight $itemName have been added, current quantity is $metricWeight'; //checkChange
           }
-          else if (existingMetricWeight != null && existingMetricWeight != 'N/A' && metricWeight != null) {
-            String result = metricCalc(existingMetricWeight, metricWeight, "add");
-            await updateFieldInFirebase(globalConnectCode, itemName, category, result, 'weight');
-            print('$itemName has been added with weight $existingMetricWeight successfully');
-            return '$existingMetricWeight of $itemName has been added, current weight is $metricWeight';//checkChange
+          else
+          if (existingMetricWeight != null && existingMetricWeight != 'N/A' &&
+              metricWeight != null) {
+            String result = metricCalc(
+                existingMetricWeight, metricWeight, "add");
+            await updateFieldInFirebase(
+                globalConnectCode, itemName, category, result, 'weight');
+            print(
+                '$itemName has been added with weight $existingMetricWeight successfully');
+            return '$existingMetricWeight of $itemName has been added, current weight is $metricWeight'; //checkChange
           }
           else {
             print('Both quantity and metric_weight for $itemName are N/A.');
@@ -316,7 +381,6 @@ Future<String?> fetchData(String response) async {
   }
 
   else if (labels.contains('add') && labels.contains('chores')) {
-
     for (var item in items) {
       var itemName = item['item'] ?? null; // Move itemName declaration here
       try {
@@ -338,47 +402,6 @@ Future<String?> fetchData(String response) async {
     }
   }
 
-  else if (labels.contains('fetch')) {
-    var response;
-    for (var item in items) {
-      var itemName = item['item'] ?? null;
-      var category = item['category'] ?? null;
-
-    if(items.isEmpty && category){
-      var querySnapshot = await FirebaseFirestore.instance
-          .collection('sharedCollection')
-          .doc(globalConnectCode)
-          .collection(category)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        var document = querySnapshot.docs;
-        print(document);
-        return document as String;
-      }
-    }
-    else {
-
-        if (category.isNotEmpty) {
-          var itemData = await fetchItemData(globalConnectCode, category, itemName);
-          if (itemData != null) {
-            response = response + '''\nItem Name: $itemName
-              Quantity: ${itemData['quantity']}
-              Weight: ${itemData['weight']}''';
-          }
-          else {
-            print('Item $itemName not found in category $category.');
-            return 'Item $itemName not found in category $category.';
-          }
-        }
-        else {
-          print('category is null or empty.');
-          return 'category is null or empty.';
-        }
-      }
-      return response;
-    }
-  }
   else if (labels.contains('remove') && labels.contains('pantry')) {
     print("Removing");
     // Retrieve the global connect code

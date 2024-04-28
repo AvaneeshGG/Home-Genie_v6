@@ -140,6 +140,21 @@ class HG_AppState extends State<HG_App> {
     );
   }
 
+  Future<int> getTodosCount() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('sharedCollection')
+          .doc(globalConnectCode)
+          .collection('todos')
+          .get();
+      return querySnapshot.size;
+    } catch (e) {
+      print("Error getting todos count: $e");
+      return 0;
+    }
+  }
+
+
   Future<void> sendGetRequest(String statement) async {
     var url = Uri.parse('http://45.248.65.97:5000/api?text=$statement');
 
@@ -178,9 +193,9 @@ class HG_AppState extends State<HG_App> {
     );
 
 
-    final fontSize = MediaQuery.of(context).size.width*0.04;
-    final h1 = MediaQuery.of(context).size.width*0.06;
-    final h2 = MediaQuery.of(context).size.width*0.04;
+    final fontSize = MediaQuery.of(context).size.width*0.05;
+    final h1 = MediaQuery.of(context).size.width*0.047;
+    final h2 = MediaQuery.of(context).size.width*0.08;
     final h3 = MediaQuery.of(context).size.width*0.04;
 
     return Directionality(
@@ -261,19 +276,10 @@ class HG_AppState extends State<HG_App> {
                             // Use MediaQuery to get top padding
                             Container(
                               decoration: BoxDecoration(
-                                color: Color(0xFFF6FF80),
                                 borderRadius: BorderRadius.circular(
                                     MediaQuery.of(context).size.width *
                                         0.05), // Make borders round
 
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    spreadRadius: 2,
-                                    blurRadius: 5,
-                                    offset: Offset(0, 3),
-                                  ),
-                                ],
                               ),
                               height: MediaQuery.of(context).size.height * 0.1,
                               // Set container height to 10% of screen height
@@ -287,7 +293,7 @@ class HG_AppState extends State<HG_App> {
                                       child: Text(
                                         'Hi User!\nWelcone back',
                                         style: TextStyle(
-                                          color: Colors.black,
+                                          //color: Colors.black,
                                           fontSize: fontSize,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -295,7 +301,7 @@ class HG_AppState extends State<HG_App> {
                                     ),
                                     Icon(
                                       Icons.person,
-                                      color: Colors.black,
+                                     // color: Colors.black,
                                       size: 48,
                                     ),
                                   ],
@@ -358,87 +364,89 @@ class HG_AppState extends State<HG_App> {
                                         MediaQuery.of(context).size.height *
                                             0.01),
                                     StreamBuilder<QuerySnapshot>(
-                                      stream: globalConnectCode != null &&
-                                          globalConnectCode!.isNotEmpty
+                                      stream: globalConnectCode != null && globalConnectCode!.isNotEmpty
                                           ? FirebaseFirestore.instance
                                           .collection('sharedCollection')
                                           .doc(globalConnectCode)
                                           .collection('todos')
-                                          .orderBy('timestamp',
-                                          descending: true)
+                                          .orderBy('timestamp', descending: true)
                                           .limit(3)
                                           .snapshots()
                                           : Stream.empty(),
                                       builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
-                                            ConnectionState.waiting) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
                                           return CircularProgressIndicator();
                                         }
                                         if (snapshot.hasError) {
-                                          return Text(
-                                              'Error: ${snapshot.error}');
+                                          return Text('Error: ${snapshot.error}');
                                         }
                                         if (snapshot.hasData) {
                                           final documents = snapshot.data!.docs;
-                                          int numberOfTodos = documents
-                                              .length; // Count the number of documents in todos
                                           if (documents.isEmpty) {
                                             return Text('No pending task',
                                                 style: TextStyle(
-                                                  fontSize: 14,
+                                                  fontSize: h3,
                                                   color: Colors.black,
                                                   fontWeight: FontWeight.bold,
                                                 ));
                                           }
-                                          return Column(
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                  'You have $numberOfTodos\ntasks for today',
-                                                  style: TextStyle(
-                                                    fontSize: 26,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.bold,
-                                                  )),
-                                              SizedBox(
-                                                  height: MediaQuery.of(context)
-                                                      .size
-                                                      .height *
-                                                      0.01),
-                                              ...documents.map((doc) {
-                                                final todo = doc.data()
-                                                as Map<String, dynamic>;
-                                                return ListTile(
-                                                  title: Column(
-                                                    crossAxisAlignment:
-                                                    CrossAxisAlignment
-                                                        .start,
-                                                    children: [
-                                                      Text(
-                                                        ' ${todo['title']}',
-                                                        style: TextStyle(
-                                                          color: Colors.black,
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                          FontWeight.w400,
-                                                        ),
-                                                      ),
-                                                    ],
+
+                                          return FutureBuilder<int>(
+                                            future: getTodosCount(),
+                                            builder: (context, countSnapshot) {
+                                              if (countSnapshot.connectionState == ConnectionState.waiting) {
+                                                return CircularProgressIndicator();
+                                              }
+                                              if (countSnapshot.hasError) {
+                                                return Text('Error: ${countSnapshot.error}');
+                                              }
+                                              int numberOfTodos = countSnapshot.data ?? 0;
+
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'You have $numberOfTodos\n tasks for today',
+                                                    style: TextStyle(
+                                                      fontSize: h2,
+                                                      color: Colors.black,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
                                                   ),
-                                                  contentPadding:
-                                                  EdgeInsets.zero,
-                                                  onTap: () {
-                                                    // Add onTap functionality if needed
-                                                  },
-                                                );
-                                              }).toList(),
-                                            ],
+                                                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                                                  ...documents.map((doc) {
+                                                    final todo = doc.data() as Map<String, dynamic>;
+                                                    return ListTile(
+                                                      title: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            '${todo['title']}',
+                                                            style: TextStyle(
+                                                              color: Colors.black,
+                                                              fontSize: h3,
+                                                              fontWeight: FontWeight.w800,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      contentPadding: EdgeInsets.zero,
+                                                      onTap: () {
+                                                        // Add onTap functionality if needed
+                                                      },
+                                                    );
+                                                  }).toList(),
+                                                ],
+                                              );
+                                            },
                                           );
                                         }
                                         return SizedBox.shrink();
                                       },
                                     ),
+
+
+
                                   ],
                                 ),
                               ),
@@ -449,7 +457,7 @@ class HG_AppState extends State<HG_App> {
                             // Add some spacing between containers
                             Container(
                               decoration: BoxDecoration(
-                                color: Color(0xFFE8EAF6),
+                                color:  Color(0xFFF6F6F8),
                                 // Set color based on theme
                                 borderRadius: BorderRadius.circular(
                                     MediaQuery.of(context).size.width * 0.05),
@@ -489,7 +497,7 @@ class HG_AppState extends State<HG_App> {
                                             'running low on',
                                             // Add your additional text here
                                             style: TextStyle(
-                                              fontSize: 28,
+                                              fontSize: h2,
                                               color: Colors.black,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -528,7 +536,7 @@ class HG_AppState extends State<HG_App> {
                                                 children: [
                                                   Text('Nothing',
                                                       style: TextStyle(
-                                                        fontSize: 14,
+                                                        fontSize: h3,
                                                         color: Colors.black,
                                                         fontWeight:
                                                         FontWeight.bold,
@@ -546,10 +554,10 @@ class HG_AppState extends State<HG_App> {
                                               return ListTile(
                                                 title: Text(title,
                                                     style: TextStyle(
-                                                      fontSize: 18,
+                                                      fontSize: h3,
                                                       color: Colors.black,
                                                       fontWeight:
-                                                      FontWeight.bold,
+                                                      FontWeight.w800,
                                                     )), // Display the title field
                                                 // Add onTap functionality if needed
                                               );
@@ -573,8 +581,8 @@ class HG_AppState extends State<HG_App> {
             ),
             Positioned(
               bottom: 0,
-              left: 16,
-              right: 16,
+              left: 0,
+              right: 0,
               child: Visibility(
                 visible: _isListening,
                 child: FloatingActionButton(
@@ -655,6 +663,7 @@ class HG_AppState extends State<HG_App> {
               label: 'Tasks',
             ),
             NavigationDestination(
+
               icon: Icon(Icons.person_outline),
               label: 'Profile',
             ),

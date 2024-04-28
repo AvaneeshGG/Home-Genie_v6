@@ -45,7 +45,7 @@ class _ConnectState extends State<Connect> {
 
   Future<void> _getGlobalConnectCode() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedConnectCode = prefs.getString('globalConnectCode');
+    String? savedConnectCode = prefs.getString('globalConnectCode') ?? null;
     setState(() {
       globalConnectCode = savedConnectCode;
     });
@@ -67,6 +67,11 @@ class _ConnectState extends State<Connect> {
         .collection('users')
         .doc(user!.uid)
         .set({'accessCode': code}, SetOptions(merge: true));
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .set({'GLOBALCode': code}, SetOptions(merge: true));
 
     setState(() {
       accessCode = code;

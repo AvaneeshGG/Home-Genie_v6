@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:home_genie/Connect.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import './main.dart';
 import './Connect.dart';
 import 'Inventory.dart';
@@ -21,7 +23,28 @@ class SettingsPage extends StatefulWidget {
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
+Future<String?> getGlobalConnectCode(String email) async {
+  QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance.collection('sharedCollection').get();
 
+  for (QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
+    QuerySnapshot<Map<String, dynamic>> usersSnapshot = await doc.reference
+        .collection('members')
+        .where('email', isEqualTo: email)
+        .get();
+
+    if (usersSnapshot.docs.isNotEmpty) {
+      return doc.id;
+    }
+  }
+  return null;
+}
+
+Future<void> updateSharedPreferences(String? user) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+ // var connectCode = await getGlobalConnectCode(user!);
+  //await prefs.setString('globalConnectCode', connectCode!);
+}
 class _SettingsPageState extends State<SettingsPage> {
   int _currentPageIndex = 3; // Initialize with the index of the Profile page
 
@@ -43,8 +66,15 @@ class _SettingsPageState extends State<SettingsPage> {
           Container(
             height: 700,
             child: Center(
-              child: ProfileScreen(),
+              child: ProfileScreen(
+                actions: [
+                  AuthStateChangeAction<SignedIn>((context, user) async {
+                    print("IT WORKS");
+                    await updateSharedPreferences(user as String?);
 
+                  }),
+                ],
+              ),
             ),
           ),
           Container(

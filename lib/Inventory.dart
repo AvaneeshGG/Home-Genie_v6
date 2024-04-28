@@ -81,6 +81,7 @@ class FirebaseTodoList extends StatelessWidget {
     required this.showEditDialog,
   });
 
+
   Color _calculateBackgroundColor(String quantity, String weight, String limit, BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
@@ -167,10 +168,13 @@ class FirebaseTodoList extends StatelessWidget {
                       caption: 'Delete',
                       color: Colors.red,
                       icon: Icons.delete,
-                      onTap: () {
-                        firebaseTodo.deleteTodo(docId: inventory.id);
+                      onTap: () async {
+                        // Delete the document from the main collection
+                        await firebaseTodo.deleteTodo(docId: inventory.id);
+
                       },
                     ),
+
                   ],
                   child: Container(
                     color: backgroundColor, // Set the background color
@@ -233,6 +237,8 @@ class _InventoryState extends State<Inventory> {
       globalConnectCode = prefs.getString('globalConnectCode');
     });
   }
+
+
 
   void _addItem() {
     String title = _titleController.text.isEmpty ? 'N/A' : _titleController.text;
@@ -598,3 +604,5 @@ class _InventoryState extends State<Inventory> {
 
 
 }
+
+
