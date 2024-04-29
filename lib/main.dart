@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:home_genie/todo.dart';
@@ -100,8 +101,11 @@ class HG_AppState extends State<HG_App> {
             MediaQuery.of(context).size.height; // Extend container to bottom
         _containerOpacity = 1.0; // Make container fully visible
       });
-      await sendGetRequest(_fullStatement.trim()); // Send full statement
-      _fullStatement = '';
+      setState(() {
+        sendGetRequest(_fullStatement.trim());
+        _fullStatement = '';
+      });// Send full statement
+
       // Reset the statement after sending
     }
   }
@@ -127,8 +131,12 @@ class HG_AppState extends State<HG_App> {
   }
 
   Future<Widget> Data() async {
+    print("What is the response? " + _httpResponse);
     data = (await fetchData(_httpResponse)) as String;
-    return Text(
+    print("Response to " + data!);
+    _httpResponse = '';
+    return
+      Text(
       data != null && data!.isNotEmpty
           ? data!
           : 'Error: data is null or empty.',
@@ -236,8 +244,7 @@ class HG_AppState extends State<HG_App> {
                               Container(
                                 width: double.infinity, // Make the container width match the parent width
                                 height: MediaQuery.of(context).size.height * 0.45, // Set container height to 30% of screen height
-                                padding: EdgeInsets.all(8), // Add padding to the container
-                                color: Colors.grey, // Set container background color
+                                padding: EdgeInsets.all(8), // Add padding to the container// Set container background color
                                 child: SingleChildScrollView(
                                   physics: AlwaysScrollableScrollPhysics(), // Make the container always scrollable
                                   child: Column(
@@ -291,7 +298,7 @@ class HG_AppState extends State<HG_App> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Hi User!\nWelcone back',
+                                        'Hi User!\nWelcome back',
                                         style: TextStyle(
                                           //color: Colors.black,
                                           fontSize: fontSize,

@@ -12,7 +12,7 @@ Future<String?> _getFirebaseCode() async {
   return prefs.getString('globalConnectCode');
 }
 
-Future<void> addFruit({
+Future<String?> addFruit({
   required String globalConnectCode,
   required String? itemName,
   required String category,
@@ -31,6 +31,7 @@ Future<void> addFruit({
       'limit': '2'
     });
     print('add + pantry block executed');
+    return 'New item $itemName has been added!';
   } catch (e) {
     print('Error adding fruit: $e');
   }
@@ -252,26 +253,26 @@ Future<String?> fetchData(String response) async {
   if (labels.contains('fetch')) {
 
   if(items.isEmpty){
-  print('Is running');
-  var querySnapshot = await FirebaseFirestore.instance
-      .collection('sharedCollection') // Collection
-      .doc(globalConnectCode) // Document
-      .collection(labels[1]) // Sub-collection
-      .get();
+    print('Is running');
+    String cats= labels[1];
+    var querySnapshot = await FirebaseFirestore.instance
+        .collection('sharedCollection') // Collection
+        .doc(globalConnectCode) // Document
+        .collection(cats) // Sub-collection
+        .get();
 
-  String titlesString = '';
+    String titlesString = '$cats in this category:\n';
 
-  querySnapshot.docs.forEach((doc) {
-  var title = doc
-      .data()['title']; // Access the "title" field from the document data
-  if (title != null) {
-  titlesString +=
-  title.toString() + '\n'; // Concatenate title with newline character
-  }
-  });
+    querySnapshot.docs.forEach((doc) {
+      var title = doc.data()['title']; // Access the "title" field from the document data
+      if (title != null) {
+        titlesString +=
+        title.toString() + '\n'; // Concatenate title with newline character
+      }
+    });
 
-  print(titlesString);
-  return titlesString;
+    print(titlesString);
+    return titlesString;
   }
   else {
   print("else");
@@ -344,7 +345,7 @@ Future<String?> fetchData(String response) async {
                 'quantity');
             print(
                 '$itemName has been added with quantity $totalQuantity successfully');
-            return '$existingMetricWeight $itemName have been added, current quantity is $metricWeight'; //checkChange
+            return '$existingQuantityInt $itemName have been added, current quantity is $totalQuantity'; //checkChange
           }
           else
           if (existingMetricWeight != null && existingMetricWeight != 'N/A' &&
@@ -371,6 +372,7 @@ Future<String?> fetchData(String response) async {
             quantity: quantity,
             metricWeight: metricWeight,
           );
+          return 'New item $itemName has been added!';
         }
       }
       else {

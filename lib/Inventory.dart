@@ -291,10 +291,10 @@ class _InventoryState extends State<Inventory> {
                 ),
               ),
               _buildExpandableSection(
-                title: 'Vegetables',
+                title: 'Vegetable',
                 content: FirebaseTodoList(
                   firebaseTodo: FirebaseTodo(
-                    category: 'vegetables',
+                    category: 'vegetable',
                     globalConnectCode: globalConnectCode ?? '',
                   ),
                   showEditDialog: _showEditDialog,
@@ -402,7 +402,7 @@ class _InventoryState extends State<Inventory> {
                       },
                       items: <String>[
                         'fruits',
-                        'vegetables',
+                        'vegetable',
                         'daily essentials',
                         'medicines',
                         'pulses'
